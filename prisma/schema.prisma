@@ -8,17 +8,29 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
+  id       String       @id @default(cuid()) 
+  email    String    @unique
+  name     String
+  image    String?
+  password String?
+  last_signed_at DateTime?
+  accounts Account[]
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  authorId  Int
-  author    User    @relation(fields: [authorId], references: [id])
+model Account {
+  id                String     @id @default(cuid())
+  userId            String    
+  user              User    @relation(fields: [userId], references: [id])
+  provider          String
+  providerAccountId String
+  type              String
+  refresh_token     String
+  access_token      String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
 }

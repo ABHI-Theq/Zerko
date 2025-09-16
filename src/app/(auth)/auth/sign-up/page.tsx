@@ -1,6 +1,6 @@
 import React from 'react'
 import Signup from '@/components/Signup'
-const SignupAuth = () => {
+const page = () => {
   return (
     <>
     <Signup/>
@@ -8,4 +8,4 @@ const SignupAuth = () => {
   )
 }
 
-export default SignupAuth
+export default page

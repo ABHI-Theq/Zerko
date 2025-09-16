@@ -1,0 +1,10 @@
+import {z} from "zod"
+
+export const userSignupSchema=z.object({
+    firstname:z.string().min(2,"firstname should be atleast of 2 characters"),
+    lastname:z.string().min(2,"firstname should be atleast of 2 characters"),
+    email:z.email("Invalid email address"),
+    password:z.string().min(6,"password should be minimun of 6 characters of length")
+})
+
+export type UserSignup=z.infer<typeof userSignupSchema>

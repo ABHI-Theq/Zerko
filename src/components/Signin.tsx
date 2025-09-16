@@ -9,52 +9,14 @@ import {
     IconEye,
     IconEyeOff,
 } from "@tabler/icons-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth";
-import { UserSignup, userSignupSchema } from "@/types";
-import toast from "react-hot-toast";
 
-export default function Signup() {
+export default function Signin() {
     const [showPassword, setShowPassword] = useState(false);
-    const [user,setUser]=useState<UserSignup>({
-        firstname:"",
-        lastname:"",
-        email:"",
-        password:""
-    })
 
-
-    const router=useRouter();
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const parsed=userSignupSchema.safeParse(user);
-        if(!parsed.success){
-            toast.error(`${parsed.error.issues[0].message}`)
-            console.log(parsed.error.issues[0].message);
-            return;
-        }
-        try {
-            "use server"
-            const res=await fetch(`${process.env.NEXT_PUBLIC_URL}/api/sign-up`,{
-                method:"POST",
-                headers:{
-                    'Content-Type':'application/json'
-                },
-                body:JSON.stringify(user)
-            })
-            const data=await res.json();
-
-            if(data.status!=201){
-                toast.error(`${data.error}`);
-                return;
-            }
-            router.push("/");
-        } catch (error) {
-            toast.error(error instanceof Error?error.message:`Some error occured${error}`)
-            return;
-        }
 
     };
 
@@ -63,37 +25,6 @@ export default function Signup() {
             <h2 className="text-xl font-bold text-neutral-100">Welcome to Zerko</h2>
 
             <form className="my-8" onSubmit={handleSubmit}>
-                {/* Name */}
-                <div className="mb-4 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
-                    <LabelInputContainer>
-                        <Label htmlFor="firstname" className="text-neutral-300">
-                            First name
-                        </Label>
-                        <Input
-                            id="firstname"
-                            onChange={(e)=>{
-                                setUser({...user,firstname:e.target.value})
-                            }}  
-                            placeholder="Tyler"
-                            type="text"
-                            className="bg-neutral-900 text-white border-neutral-700"
-                        />
-                    </LabelInputContainer>
-                    <LabelInputContainer>
-                        <Label htmlFor="lastname" className="text-neutral-300">
-                            Last name
-                        </Label>
-                        <Input
-                            id="lastname"
-                            onChange={(e)=>{
-                                setUser({...user,lastname:e.target.value})
-                            }}
-                            placeholder="Galpin"
-                            type="text"
-                            className="bg-neutral-900 text-white border-neutral-700"
-                        />
-                    </LabelInputContainer>
-                </div>
 
                 {/* Email */}
                 <LabelInputContainer className="mb-4">
@@ -101,10 +32,8 @@ export default function Signup() {
                         Email Address
                     </Label>
                     <Input
+                    name="email"
                         id="email"
-                        onChange={(e)=>{
-                                setUser({...user,email:e.target.value})
-                            }}
                         placeholder="projectmayhem@fc.com"
                         type="email"
                         className="bg-neutral-900 text-white border-neutral-700"
@@ -118,10 +47,8 @@ export default function Signup() {
                     </Label>
                     <div className="relative w-full">
                         <Input
+                        name="password"
                             id="password"
-                            onChange={(e)=>{
-                                setUser({...user,password:e.target.value})
-                            }}
                             placeholder="••••••••"
                             type={showPassword ? "text" : "password"}
                             className="bg-neutral-900 text-white border-neutral-700 w-full pr-10"
@@ -142,22 +69,22 @@ export default function Signup() {
                     className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-zinc-900 to-zinc-800 font-medium text-white shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset]"
                     type="submit"
                 >
-                    Sign up &rarr;
+                    Sign In &rarr;
                     <BottomGradient />
                 </button>
-                <p className="pt-2">Already have account? <Link href={"/auth/sign-in"} className="text-blue-500 hover:underline">Sign in</Link> here</p>
+                <p className="pt-2">Do not have an Account? <Link className="text-blue-400 hover:underline" href={"/auth/sign-up"}>Sign up</Link> here</p>
 
                 {/* Divider */}
                 <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-700 to-transparent" />
 
                 {/* Social Auth */}
                 <div className="flex space-x-5">
-                    <div onClick={()=>signIn("github")} className="w-full">
-                    <AuthButton
-                     icon={<IconBrandGithub className="h-4 w-4" />} label="GitHub" />
+                    <div onClick={() => signIn("github")} className="w-full">
+                        <AuthButton
+                            icon={<IconBrandGithub className="h-4 w-4" />} label="GitHub" />
                     </div>
-                    <div onClick={()=>signIn("github")} className="w-full">
-                    <AuthButton icon={<IconBrandGoogle className="h-4 w-4" />} label="Google" />
+                    <div onClick={() => signIn("github")} className="w-full">
+                        <AuthButton icon={<IconBrandGoogle className="h-4 w-4" />} label="Google" />
                     </div>
                 </div>
             </form>
