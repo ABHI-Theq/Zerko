@@ -15,10 +15,13 @@ import { email } from "zod";
 import { LoaderOne } from "./ui/loader";
 import toast from "react-hot-toast";
 import { signInWithCredential, signInWithGithub, signInWithGoogle } from "@/features/actions";
+import { useRouter } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export default function Signin() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState<boolean>(false)
+    const router=useRouter()
     const [user, setUser] = useState<UserSignin>(
         {
             email: "",
@@ -28,19 +31,22 @@ export default function Signin() {
 
     const handleSubmit =async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setLoading(true)
         try {
             const res=await signInWithCredential({
-                email:user.email,password:user.password,redirectTo:"/"
+                email:user.email,password:user.password
             })
             console.log(res);
-            
-
+            toast.success("user logged in successfully")
+            router.push("/")
         } catch (error) {
             const errMsg=error instanceof Error?error.message:"error occurred while signing in";
             console.log(error);
             
             toast.error(`${errMsg}`);
-            return;
+            
+        }finally{
+            setLoading(false)
         }
 
     };

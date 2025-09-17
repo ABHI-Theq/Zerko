@@ -12,6 +12,7 @@
     "@auth/prisma-adapter": "^2.10.0",
     "@prisma/client": "^6.16.1",
     "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
     "@tabler/icons-react": "^3.35.0",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",

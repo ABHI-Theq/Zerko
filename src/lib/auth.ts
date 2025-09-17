@@ -1,14 +1,9 @@
 import NextAuth, { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import Github from "next-auth/providers/github";
-import { saltAndHashPassword } from "@/util/password";
 
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import Email from "next-auth/providers/email";
-import bcrypt from "bcryptjs";
-import { userSigninSchema } from "@/types";
+import { authConfig } from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
@@ -103,51 +98,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
-  providers: [
-    Credentials({
-      credentials: {
-        email: {
-          type: "email",
-        },
-        password: {
-          type: "password"
-        },
-      },
-      authorize: async (credentials) => {
-        let user = null;
-        console.log(credentials);
-        
-
-        const {email,password}=await userSigninSchema.parseAsync(credentials);
-
-      
-        user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user) {
-          console.error("No user exists with this email");
-          return null;
-        }
-        const isvalid = await bcrypt.compare(
-          credentials.password as string,
-          user.password as string
-        );
-        if (!isvalid) {
-          console.error("password does not match");
-          return null;
-        }
-
-        return user;
-      },
-    }),
-    Github({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    }),
-    Google({
-      clientId: process.env.GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_SECRET,
-    }),
-  ],
+  ...authConfig
 });
