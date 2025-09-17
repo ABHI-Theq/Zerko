@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
+import { LoaderOne } from "@/components/ui/loader";
 import {
     IconBrandGithub,
     IconBrandGoogle,
@@ -17,6 +19,7 @@ import toast from "react-hot-toast";
 
 export default function Signup() {
     const [showPassword, setShowPassword] = useState(false);
+    const [loading,setLoading]=useState<boolean>(false)
     const [user,setUser]=useState<UserSignup>({
         firstname:"",
         lastname:"",
@@ -35,6 +38,9 @@ export default function Signup() {
             console.log(parsed.error.issues[0].message);
             return;
         }
+
+        setLoading(true);
+
         try {
             "use server"
             const res=await fetch(`${process.env.NEXT_PUBLIC_URL}/api/sign-up`,{
@@ -51,8 +57,10 @@ export default function Signup() {
                 return;
             }
             router.push("/");
+            setLoading(false)
         } catch (error) {
             toast.error(error instanceof Error?error.message:`Some error occured${error}`)
+            setLoading(false)
             return;
         }
 
@@ -72,7 +80,7 @@ export default function Signup() {
                         <Input
                             id="firstname"
                             onChange={(e)=>{
-                                setUser({...user,firstname:e.target.value})
+                                setUser({...user,firstname:e.target.value.trim()})
                             }}  
                             placeholder="Tyler"
                             type="text"
@@ -86,7 +94,7 @@ export default function Signup() {
                         <Input
                             id="lastname"
                             onChange={(e)=>{
-                                setUser({...user,lastname:e.target.value})
+                                setUser({...user,lastname:e.target.value.trim()})
                             }}
                             placeholder="Galpin"
                             type="text"
@@ -139,10 +147,17 @@ export default function Signup() {
 
                 {/* Submit */}
                 <button
-                    className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-zinc-900 to-zinc-800 font-medium text-white shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset]"
+                    className=" group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-zinc-900 to-zinc-800 font-medium text-white shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset]"
                     type="submit"
                 >
-                    Sign up &rarr;
+                    {
+                        loading?(
+                            <div className="h-3 w-15 mx-auto mb-4"> <LoaderOne/>
+                            </div>
+                        ):(
+                    <p>Sign up &rarr;</p>
+                        )
+                    }
                     <BottomGradient />
                 </button>
                 <p className="pt-2">Already have account? <Link href={"/auth/sign-in"} className="text-blue-500 hover:underline">Sign in</Link> here</p>
@@ -152,11 +167,11 @@ export default function Signup() {
 
                 {/* Social Auth */}
                 <div className="flex space-x-5">
-                    <div onClick={()=>signIn("github")} className="w-full">
+                    <div onClick={async()=>await signIn("github",{redirectTo:"/"})} className="w-full">
                     <AuthButton
                      icon={<IconBrandGithub className="h-4 w-4" />} label="GitHub" />
                     </div>
-                    <div onClick={()=>signIn("github")} className="w-full">
+                    <div onClick={async()=>await signIn("google",{redirectTo:"/"})} className="w-full">
                     <AuthButton icon={<IconBrandGoogle className="h-4 w-4" />} label="Google" />
                     </div>
                 </div>

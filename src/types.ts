@@ -8,3 +8,10 @@ export const userSignupSchema=z.object({
 })
 
 export type UserSignup=z.infer<typeof userSignupSchema>
+
+export const userSigninSchema=z.object({
+    email:z.email("Invalid Email address"),
+    password:z.string().min(6,"password should be minimum of 6 characters of length")
+})
+
+export type UserSignin=z.infer<typeof userSigninSchema>

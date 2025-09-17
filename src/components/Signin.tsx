@@ -10,13 +10,38 @@ import {
     IconEyeOff,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { signIn } from "@/lib/auth";
+import { UserSignin } from "@/types";
+import { email } from "zod";
+import { LoaderOne } from "./ui/loader";
+import toast from "react-hot-toast";
+import { signInWithCredential, signInWithGithub, signInWithGoogle } from "@/features/actions";
 
 export default function Signin() {
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState<boolean>(false)
+    const [user, setUser] = useState<UserSignin>(
+        {
+            email: "",
+            password: ""
+        }
+    )
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit =async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        try {
+            const res=await signInWithCredential({
+                email:user.email,password:user.password,redirectTo:"/"
+            })
+            console.log(res);
+            
+
+        } catch (error) {
+            const errMsg=error instanceof Error?error.message:"error occurred while signing in";
+            console.log(error);
+            
+            toast.error(`${errMsg}`);
+            return;
+        }
 
     };
 
@@ -32,8 +57,11 @@ export default function Signin() {
                         Email Address
                     </Label>
                     <Input
-                    name="email"
+                        name="email"
                         id="email"
+                        onChange={(e)=>{
+                            setUser({...user,email:e.target.value})
+                        }}
                         placeholder="projectmayhem@fc.com"
                         type="email"
                         className="bg-neutral-900 text-white border-neutral-700"
@@ -47,8 +75,12 @@ export default function Signin() {
                     </Label>
                     <div className="relative w-full">
                         <Input
-                        name="password"
+                            name="password"
                             id="password"
+                               onChange={(e)=>{
+                            setUser({...user,password:e.target.value})
+                        }}
+                     
                             placeholder="••••••••"
                             type={showPassword ? "text" : "password"}
                             className="bg-neutral-900 text-white border-neutral-700 w-full pr-10"
@@ -69,7 +101,14 @@ export default function Signin() {
                     className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-zinc-900 to-zinc-800 font-medium text-white shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset]"
                     type="submit"
                 >
-                    Sign In &rarr;
+                    {
+                        loading ? (
+                            <div className="h-3 w-15 mx-auto mb-4"> <LoaderOne />
+                            </div>
+                        ) : (
+                            <p>Sign in &rarr;</p>
+                        )
+                    }
                     <BottomGradient />
                 </button>
                 <p className="pt-2">Do not have an Account? <Link className="text-blue-400 hover:underline" href={"/auth/sign-up"}>Sign up</Link> here</p>
@@ -79,11 +118,15 @@ export default function Signin() {
 
                 {/* Social Auth */}
                 <div className="flex space-x-5">
-                    <div onClick={() => signIn("github")} className="w-full">
+                    <div onClick={async () => {
+                         await signInWithGithub()
+                    }} className="w-full">
                         <AuthButton
                             icon={<IconBrandGithub className="h-4 w-4" />} label="GitHub" />
                     </div>
-                    <div onClick={() => signIn("github")} className="w-full">
+                    <div onClick={async () => {
+                        await signInWithGoogle()
+                    }} className="w-full">
                         <AuthButton icon={<IconBrandGoogle className="h-4 w-4" />} label="Google" />
                     </div>
                 </div>

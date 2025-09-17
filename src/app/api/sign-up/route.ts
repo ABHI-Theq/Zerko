@@ -1,7 +1,6 @@
 import prisma from "@/lib/prisma";
 import { saltAndHashPassword } from "@/util/password";
 import { NextRequest, NextResponse } from "next/server";
-import { redirect } from "next/navigation";
 
 export async function POST(req: NextRequest): Promise<any> {
   const { firstname, lastname, email, password } = await req.json();
