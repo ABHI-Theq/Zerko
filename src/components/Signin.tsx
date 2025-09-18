@@ -52,7 +52,7 @@ export default function Signin() {
     };
 
     return (
-        <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-black p-8 text-white">
+        <div className="relative shadow-input mx-auto w-full max-w-md rounded-2xl bg-black p-8 text-white z-10">
             <h2 className="text-xl font-bold text-neutral-100">Welcome to Zerko</h2>
 
             <form className="my-8" onSubmit={handleSubmit}>

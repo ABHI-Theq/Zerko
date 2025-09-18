@@ -23,6 +23,7 @@ export async function POST(req: NextRequest): Promise<any> {
         name: `${firstname} ${lastname}`,
         email: email,
         password: hashedpassword,
+        image:"/user.png"
       },
     });
 

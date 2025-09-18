@@ -1,11 +1,10 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -17,7 +16,8 @@ export default function Home() {
       await signOut({ redirect: false });
       toast.success("Signed out successfully");
     } catch (error) {
-      const errMsg = error instanceof Error ? error.message : "Error while signing out";
+      const errMsg =
+        error instanceof Error ? error.message : "Error while signing out";
       toast.error(errMsg);
     } finally {
       setIsLoading(false);
@@ -29,20 +29,26 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className=" min-h-screen w-full flex justify-center items-center ">
+      {/* Background Grid */}
+     
+
+      {/* Foreground content */}
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Authentication Demo
+        <h1 className="text-2xl font-bold text-center mb-6 my-auto text-gray-800">
+          ZERKO
         </h1>
-        
-        {session ? (
+
+        {/* {session ? (
           <div className="space-y-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <p className="text-lg font-medium text-gray-700">User ID:</p>
-              <p className="text-sm text-gray-600 mt-2 break-all">{session.user?.id}</p>
+              <p className="text-sm text-gray-600 mt-2 break-all">
+                {session.user?.id}
+              </p>
             </div>
-            <Button 
-              onClick={onOut} 
+            <Button
+              onClick={onOut}
               className="w-full bg-red-500 hover:bg-red-600"
               disabled={isLoading}
             >
@@ -52,7 +58,9 @@ export default function Home() {
         ) : (
           <div className="space-y-4">
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <p className="text-lg font-medium text-gray-700">No user logged in</p>
+              <p className="text-lg font-medium text-gray-700">
+                No user logged in
+              </p>
             </div>
             <div className="flex flex-col gap-3">
               <Link href={"/auth/sign-in"}>
@@ -67,8 +75,9 @@ export default function Home() {
               </Link>
             </div>
           </div>
-        )}
+        )} */}
       </div>
-    </div>
+      </div>
+    
   );
 }

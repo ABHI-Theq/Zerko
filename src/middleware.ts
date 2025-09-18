@@ -1,4 +1,3 @@
-// middleware.ts
 import { authConfig } from "@/lib/auth.config";
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
