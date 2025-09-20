@@ -12,14 +12,15 @@ import {
 } from "@/components/ui/resizable-navbar";
 import { useSession } from "next-auth/react";
 import { collectRoutesUsingEdgeRuntime } from "next/dist/build/utils";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function Navbar() {
   const navItems = [
-    { name: "Features", link: "#features" },
-    { name: "Pricing", link: "#pricing" },
-    { name: "Contact", link: "#contact" },
+    { name: "Features", link: "/web-features" },
+    { name: "Pricing", link: "/pricing" },
+    { name: "AboutUs", link: "/about" },
   ];
   const {data:session}=useSession();
   const router=useRouter();
@@ -28,9 +29,11 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="sticky max-w-[75vw] left-[12.5vw] top-10 rounded-4xl z-50 px-2 bg-white backdrop-blur-md shadow-md"
-    style={{
-      boxShadow: "0px 0px 39px 7px rgba(0,0,0,0.1)"  }  }>
+<div
+  className="fixed top-6 left-1/2 -translate-x-1/2 w-[75vw] rounded-4xl z-50 px-2 bg-white backdrop-blur-md shadow-md"
+  style={{ boxShadow: "0px 0px 39px 7px rgba(0,0,0,0.1)" }}
+>
+
       <ResizableNavbar>
         {/* Desktop Navigation */}
         <NavBody>
@@ -69,14 +72,14 @@ export default function Navbar() {
             onClose={() => setIsMobileMenuOpen(false)}
           >
             {navItems.map((item, idx) => (
-              <a
+              <Link
                 key={`mobile-link-${idx}`}
                 href={item.link}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="relative text-black hover:text-gray-800"
               >
                 <span className="block">{item.name}</span>
-              </a>
+              </Link>
             ))}
 
             <div className="flex w-full flex-col gap-4">

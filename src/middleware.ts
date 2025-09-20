@@ -11,6 +11,9 @@ export default auth(async function middleware(req) {
 
   const publicRoutes = [
     '/',
+    "/web-features",
+    "/pricing",
+    "/about",
     '/auth/sign-in',
     '/auth/sign-up'
   ];

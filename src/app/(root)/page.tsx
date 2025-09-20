@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "motion/react";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -29,55 +30,32 @@ export default function Home() {
   }
 
   return (
-    <div className=" min-h-screen w-full flex justify-center items-center ">
-      {/* Background Grid */}
-     
-
-      {/* Foreground content */}
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold text-center mb-6 my-auto text-gray-800">
-          ZERKO
+    <div className="min-h-screen w-full flex flex-col justify-center items-center">
+      {/* First Text */}
+      <motion.div
+        className="min-w-md w-[60vw] "
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: .5 }}
+      >
+        <h1 className="text-[70px] font-medium text-center my-auto text-gray-800">
+          Take your interview prepation to next level
         </h1>
+      </motion.div>
 
-        {/* {session ? (
-          <div className="space-y-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-lg font-medium text-gray-700">User ID:</p>
-              <p className="text-sm text-gray-600 mt-2 break-all">
-                {session.user?.id}
-              </p>
-            </div>
-            <Button
-              onClick={onOut}
-              className="w-full bg-red-500 hover:bg-red-600"
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing out..." : "Sign out"}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <p className="text-lg font-medium text-gray-700">
-                No user logged in
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Link href={"/auth/sign-in"}>
-                <Button className="w-full bg-blue-500 hover:bg-blue-600">
-                  Sign in
-                </Button>
-              </Link>
-              <Link href={"/auth/sign-up"}>
-                <Button variant="outline" className="w-full">
-                  Sign up
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )} */}
-      </div>
-      </div>
-    
+      <hr className="border-t-2 border-black w-[64vw] my-2" />
+
+      {/* Second Text */}
+      <motion.div
+        className="min-w-md w-full"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: .5 }}
+      >
+        <h4 className="text-[30px] text-center text-gray-700">
+          Personalized interview practice, instant feedback, and real-time skill improvement
+        </h4>
+      </motion.div>
+    </div>
   );
 }
