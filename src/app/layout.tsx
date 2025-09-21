@@ -30,7 +30,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
-         <div className="min-h-screen w-full bg-[#eeefee] relative text-gray-800" >
+         <div className="min-h-screen w-full bg-[#e2e2e2] relative text-gray-800" >
     <div
     className="absolute inset-0 z-0 pointer-events-none"
     style={{

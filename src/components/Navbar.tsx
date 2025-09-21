@@ -43,7 +43,7 @@ export default function Navbar() {
             <NavbarButton
               variant="gradient"
                             onClick={()=>{router.push("/auth/sign-in")}}
-              className="text-black "
+              className="text-white "
             >
               Login
             </NavbarButton>
