@@ -2,7 +2,6 @@ import NextAuth, { NextAuthConfig } from "next-auth";
 
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
-import Email from "next-auth/providers/email";
 import { authConfig } from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -11,15 +10,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!user || !account) return false;
 
       const existingUser = await prisma.user.findUnique({
-        where: {
-          email: user.email as string,
-        },
+        where: { email: user.email as string },
       });
+
       if (!existingUser) {
         const newUser = await prisma.user.create({
           data: {
-            email: user.email!,
-            name: user.name!,
+            email: user.email as string ?? profile?.email,
+            name: user.name as string ?? profile?.name,
+            image: user.image ?? profile?.picture ??"/user.png", // ✅ set default here
             accounts: {
               create: {
                 provider: account.provider,
@@ -64,39 +63,50 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               scope: account.scope,
               id_token: account.id_token,
               session_state: JSON.stringify(account.session_state),
-              userId: existingUser.id, // Link to existing user
+              userId: existingUser.id,
             },
+          });
+        }
+
+        // ✅ If existing user has no image, patch it
+        if (!existingUser.image) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { image: user.image ?? profile?.picture ?? "/user.png" },
           });
         }
       }
 
       return true;
     },
+
     async jwt({ token, user, account }) {
       if (!token.sub) return token;
 
       const existingUser = await prisma.user.findUnique({
-        where: {
-          id: token.sub,
-        },
+        where: { id: token.sub },
         include: { accounts: true },
       });
-      if(!existingUser) return token;
+      if (!existingUser) return token;
 
-      token.name=existingUser.name;
-      token.email=existingUser.email;
+      token.name = existingUser.name;
+      token.email = existingUser.email;
+      token.picture = existingUser.image ?? "/user.png"; // ✅ attach to token
 
       return token;
     },
-    async session({user,session,token}){
-      if(token.sub && session.user){
-        session.user.id=token.sub;
+
+    async session({ session, token }) {
+      if (token.sub && session.user) {
+        session.user.id = token.sub;
+        
+        session.user.image = token.picture ?? "/user.png"; // ✅ ensure frontend always gets it
       }
       return session;
-    }
+    },
   },
   secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
-  ...authConfig
+  ...authConfig,
 });

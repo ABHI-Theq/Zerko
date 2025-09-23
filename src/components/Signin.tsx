@@ -16,7 +16,6 @@ import { LoaderOne } from "./ui/loader";
 import toast from "react-hot-toast";
 import { signInWithCredential, signInWithGithub, signInWithGoogle } from "@/features/actions";
 import { useRouter } from "next/navigation";
-import { revalidatePath } from "next/cache";
 
 export default function Signin() {
     const [showPassword, setShowPassword] = useState(false);

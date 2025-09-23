@@ -20,7 +20,6 @@ export const authConfig={
       },
       authorize: async (credentials) => {
         let user = null;
-        console.log(credentials);
         
 
         const {email,password}=await userSigninSchema.parseAsync(credentials);

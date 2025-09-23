@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum InterviewType {
+  TECHNICAL
+  BEHAVIORAL
+  SYSTEM_DESIGN
+  HR
+}
+
 model User {
   id       String       @id @default(cuid()) 
   email    String    @unique
@@ -15,6 +22,7 @@ model User {
   password String?
   last_signed_at DateTime?
   accounts Account[]
+  interviews Interview[]
 }
 
 model Account {
@@ -33,4 +41,12 @@ model Account {
   session_state     String?
 
   @@unique([provider, providerAccountId])
+}
+model Interview{
+  id      String @id @default(cuid())
+  userId            String    
+  user              User    @relation(fields: [userId], references: [id])
+  interviewtype InterviewType
+  resume_url  String
+  createdAt  DateTime  @default(now())
 }
