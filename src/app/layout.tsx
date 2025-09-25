@@ -42,6 +42,9 @@ export default function RootLayout({
       `,
     }}
   />
+
+ 
+
         <SessionProvider> 
           {children}
         <Toaster position="bottom-right"/>

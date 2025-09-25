@@ -70,7 +70,9 @@ export default function Home() {
           duration:1
          }}
          className="relative mt-4">
-        <Button className="relative text-xl rounded-2xl p-6 overflow-hidden">
+        <Button className="relative text-xl rounded-2xl p-6 overflow-hidden "
+                  
+        >
           <motion.span
             whileHover={{
               scale: 1.1,
