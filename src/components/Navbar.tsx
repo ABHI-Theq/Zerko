@@ -17,22 +17,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import { cn } from "@/lib/utils";
 import { HelpCircle, LogOut, Settings2, User } from "lucide-react";
+import Userbutton from "./Userbutton";
+import { Session } from "next-auth";
 
 export default function Navbar() {
   const navItems = [
@@ -49,7 +38,7 @@ export default function Navbar() {
 
   return (
     <div
-      className="fixed top-6 left-1/2 -translate-x-1/2 w-[75vw] rounded-4xl z-50  bg-white backdrop-blur-md shadow-md"
+      className="fixed top-6 left-1/2 -translate-x-1/2 w-[75vw] rounded-4xl z-50 backdrop-blur-md shadow-md"
       style={{ boxShadow: "0px 0px 39px 7px rgba(0,0,0,0.1)" }}
     >
       <ResizableNavbar>
@@ -69,42 +58,7 @@ export default function Navbar() {
                   Dashboard
                 </NavbarButton>
                  */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild className="cursor-pointer">
-                     <div className={("rounded-full relative")}>
-      <Image
-        src={session.user?.image ?? "/user.png"}
-        alt="User"
-        width={40}
-        height={40}
-        className="rounded-full cursor-pointer"
-      />
-    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem>Profile
-                                                <DropdownMenuShortcut><User className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>Settings
-                                                <DropdownMenuShortcut><Settings2 className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>Help
-                                                <DropdownMenuShortcut><HelpCircle className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator/>
-                    <DropdownMenuItem onClick={async()=>{
-                        await signOutAuth();
-                      }}>
-                       
-                        Log out
-                        <DropdownMenuShortcut><LogOut className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                 <Userbutton session={session as Session}/>
                   
               </>
             ) : (

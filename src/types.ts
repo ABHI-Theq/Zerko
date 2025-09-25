@@ -15,3 +15,19 @@ export const userSigninSchema=z.object({
 })
 
 export type UserSignin=z.infer<typeof userSigninSchema>
+enum InterviewType {
+  TECHNICAL,
+  BEHAVIORAL,
+  SYSTEM_DESIGN,
+  HR
+}
+
+export const InterviewCreationSchema=z.object({
+    userId: z.string(),
+    post:z.string(),
+    jobdescription:z.string(),
+    interviewtype: InterviewType,
+    resume:z.string()
+})
+
+export type InterviewCreation=z.infer<typeof InterviewCreationSchema>
