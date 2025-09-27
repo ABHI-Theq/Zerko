@@ -10,7 +10,7 @@ import {
     IconEyeOff,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { UserSignin } from "@/types";
+import { UserSignin, userSigninSchema } from "@/types";
 import { email } from "zod";
 import { LoaderOne } from "./ui/loader";
 import toast from "react-hot-toast";
@@ -31,6 +31,14 @@ export default function Signin() {
     const handleSubmit =async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true)
+
+        const parsed=userSigninSchema.safeParse(user);
+        if(!parsed.success){
+            toast.error(`${parsed.error.issues[0].message}`)
+            console.log(parsed.error.issues[0].message);
+            setLoading(false)
+            return;
+        }
         try {
             const res=await signInWithCredential({
                 email:user.email,password:user.password

@@ -15,19 +15,38 @@ export const userSigninSchema=z.object({
 })
 
 export type UserSignin=z.infer<typeof userSigninSchema>
-enum InterviewType {
-  TECHNICAL,
-  BEHAVIORAL,
-  SYSTEM_DESIGN,
-  HR
+export enum InterviewType {
+  TECHNICAL = "TECHNICAL",
+  BEHAVIORAL = "BEHAVIORAL",
+  SYSTEM_DESIGN = "SYSTEM_DESIGN",
+  HR = "HR"
 }
 
 export const InterviewCreationSchema=z.object({
-    userId: z.string(),
-    post:z.string(),
-    jobdescription:z.string(),
-    interviewtype: InterviewType,
-    resume:z.string()
+    post:z.string()
+      .min(1, "Post is required")
+      .refine(val => /^[a-zA-Z\s]+$/.test(val), {
+        message: "Post must contain only letters and spaces"
+      }),
+    jobDescription:z.string(),
+    resume:z
+      .any()
+      .refine(
+        (file) =>
+          file &&
+          typeof file === "object" &&
+          "type" in file &&
+          (
+            file.type === "application/pdf" ||
+            file.type === "application/msword" ||
+            file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ),
+        {
+          message: "Only PDF, DOC, or DOCX files are allowed",
+        }
+      ),
+    interviewType:z.enum(InterviewType),
+    duration:z.number()
 })
 
 export type InterviewCreation=z.infer<typeof InterviewCreationSchema>

@@ -24,6 +24,8 @@ export async function DELETE(req:NextRequest,{params}:{params:{id:string}}){
         })
     } catch (error) {
         const errMsg=error instanceof Error?error.message:"Error while deleting the interview"
-        return errMsg
+        return NextResponse.json({
+            error:errMsg,status:500
+        })
     }
 }

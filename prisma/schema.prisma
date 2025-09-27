@@ -65,8 +65,7 @@ model Interview {
   endedAt        DateTime?
 
   transcript     Json?    // running transcript of Q&A
-  feedback       Json?    // AI feedback after interview (optional)
-
+  feedbackreport       Json?    // AI feedback after interview (optional)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

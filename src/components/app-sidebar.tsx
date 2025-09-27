@@ -41,7 +41,7 @@ export function AppSidebar() {
   return (
     <div style={{
       boxShadow: "13px 4px 21px 3px rgba(0,0,0,0.1)"
-    }}>
+    }} >
     <Sidebar>
       <SidebarHeader className="">
         <Image
