@@ -43,7 +43,7 @@ export function AppSidebar() {
       boxShadow: "13px 4px 21px 3px rgba(0,0,0,0.1)"
     }} >
     <Sidebar>
-      <SidebarHeader className="">
+      <SidebarHeader className="flex flex-row items-center justify-center">
         <Image
         src="/logo.png"
         alt="Logo"
@@ -51,16 +51,17 @@ export function AppSidebar() {
         height={40}
         className=""
         />
+        <p className="text-black text-md font-medium">Zerko</p>
       </SidebarHeader>
                        <hr className="bg-gray-800 border-t-1 border-gray-700 "/>
       <SidebarContent className="">
-        <SidebarGroup />
+        <SidebarGroup className="">
         <SidebarGroupLabel className="text-lg ">Details Section</SidebarGroupLabel>
         <SidebarGroupContent>
             <SidebarMenu>
             {links.map((e)=>(
                 <SidebarMenuItem key={e.title}  className="">
-                    <SidebarMenuButton className="h-20">
+                    <SidebarMenuButton className="h-10 hover:bg-neutral-300">
                         <Link href={e.url} className="flex items-center justify-start gap-4  relative w-full ">
                         {e.icon && <e.icon/>}
                         <span className="text-md font-medium">{e.title}</span>
@@ -70,7 +71,7 @@ export function AppSidebar() {
             ))}
             </SidebarMenu>
         </SidebarGroupContent>
-        <SidebarGroup />
+        </SidebarGroup>
       </SidebarContent><div className="hover:bg-gray-200">
         
                     <hr className="bg-gray-800 border-t-1 border-gray-700 "/>

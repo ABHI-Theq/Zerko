@@ -61,8 +61,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/new`, {
         method: "POST",
-        body: formData,
-        // Do not set Content-Type, browser will set it for FormData
+        body: formData
       });
 
       const data = await res.json();
@@ -73,7 +72,12 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
         toast.error(`${data.error}`)
         return;
       }
-      router.push("/interview/start")
+      const interviewId = data.interviewDets.id;
+      console.log(interviewId);
+      
+      toast.success("Interview created successfully!")
+      onOpenChange?.(false)
+      router.push(`/interview/start/${interviewId}?duration=${duration}`)
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "error while initiating the interview process"
       toast.error(`${errMsg}`)

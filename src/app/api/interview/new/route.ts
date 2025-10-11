@@ -76,10 +76,10 @@ export async function POST(req: Request) {
         cloudinary.uploader
           .upload_stream(
             {
-              resource_type: "raw",
+              resource_type:"auto",
               folder: "resumes",
-              use_filename: true,
-            },
+              use_filename: true
+            }, 
             (error, result) => {
               if (error) reject(error);
               else resolve(result as CloudinaryResponse);
@@ -91,6 +91,11 @@ export async function POST(req: Request) {
     
       resumeUrl = uploadRes.secure_url;
       console.log(resumeUrl);
+
+      resumeUrl=resumeUrl?.replace(
+        "/upload/",
+        "/upload/f_jpg/"
+      ) as string
       
     }
 
