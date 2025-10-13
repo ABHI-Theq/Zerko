@@ -1,129 +1,206 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useParams, useRouter,useSearchParams } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {Spinner} from "@/components/ui/spinner"
-import { Mic, MicOff, User, Bot, Timer, PhoneOff } from "lucide-react";
-import { useInterview } from "@/features/hooks/interview";
-import toast from "react-hot-toast";
+import { Mic, MicOff, Bot, User, PhoneOff } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import InterviewHeader from "@/components/InterviewHeader";
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
 
 export default function InterviewPage() {
-  const { id } = useParams();
-  const router = useRouter();
-  const {interview,loading,error}=useInterview(id as string)
-  if(error){
-    toast.error(error)
-    return;
-  }
-  const duration=useSearchParams().get("duration")
-  const [isMicOn, setIsMicOn] = useState<boolean>(true);
-  const [transcript, setTranscript] = useState([
-    { sender: "ai", text: "Welcome! Let's start your interview." } 
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<any>(null);
+  const [isMicOn, setIsMicOn] = useState(false);
 
-  if(loading){
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const userName = "Abhishek";
+  const post = "Full Stack Developer";
+  const job_desc = "Looking for React and Node.js developer...";
+  const resume = "Experienced in building scalable APIs...";
+  const questions = [
+    { id: 1, question: "Tell me about your experience in web development." },
+    { id: 2, question: "How do you handle scalability in backend systems?" },
+  ];
+
+  const speak = (text: string) => {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "en-US";
+    utter.rate = 1.05;
+    window.speechSynthesis.speak(utter);
+  };
+
+  // --- Initialize Interview ---
+  useEffect(() => {
+    const initInterview = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/interview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            post,
+            job_desc,
+            resume,
+            questions,
+            messages: [],
+          }),
+        });
+
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+
+        const data = await res.json();
+        const aiMsg = { role: "interviewer", content: data.AIResponse };
+        setMessages([aiMsg]);
+        speak(`Welcome ${userName}! ${data.AIResponse}`);
+      } catch (err) {
+        console.error("Interview agent initialization failed:", err);
+        setApiError("Interview agent is not working.");
+        setMessages([{ role: "interviewer", content: "Interview agent is not working." }]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initInterview();
+  }, []);
+
+  const startListening = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech Recognition not supported in your browser.");
+      return;
+    }
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[event.resultIndex][0].transcript.trim();
+      console.log("User said:", transcript);
+
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        console.log("10s silence detected - sending to backend...");
+        recognition.stop();
+        sendToAI(transcript);
+      }, 10000);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsMicOn(false);
+    };
+
+    recognition.start();
+    setIsListening(true);
+    setIsMicOn(true);
+    console.log("Listening...");
+  };
+
+  const sendToAI = async (userText: string) => {
+    const newMessages = [...messages, { role: "candidate", content: userText }];
+    setMessages(newMessages);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post,
+          job_desc,
+          resume,
+          questions,
+          messages: newMessages,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+
+      const data = await res.json();
+      const aiMsg = { role: "interviewer", content: data.AIResponse };
+      setMessages((prev) => [...prev, aiMsg]);
+      speak(data.AIResponse);
+    } catch (err) {
+      console.error("Failed to fetch AI response:", err);
+      const errorMsg = { role: "interviewer", content: "Interview agent is not working." };
+      setMessages((prev) => [...prev, errorMsg]);
+      setApiError("Interview agent is not working.");
+    }
+  };
+
+  if (loading)
     return (
-      <>
-      <div className="w-full h-[100vh] flex items-center justify-center">
-        <Spinner className="size-20"/>
+      <div className="flex h-[100vh] items-center justify-center">
+        <Spinner className="size-20" />
       </div>
-      </>
-    )
-  }
-
+    );
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="flex justify-between items-center px-6 py-4 bg-white shadow">
-        <h1 className="text-lg font-semibold">Interview Session #{id}</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 font-mono text-lg">
-            <Timer className="w-5 h-5 text-blue-600" /> {}
+      {/* HEADER */}
+     <InterviewHeader post={post}/>
+
+      {/* BODY */}
+      <div className="flex flex-1 p-4">
+        {/* Left: User */}
+        <div className="flex flex-col w-1/3 items-center justify-center border-r">
+          <div className="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center">
+            <User className="w-10 h-10 text-blue-600" />
           </div>
-          <Button variant="destructive" onClick={()=>{}}>
-            <PhoneOff className="w-4 h-4 mr-2" /> End Interview
+          <Button
+            onClick={startListening}
+            className="mt-4"
+            variant={isMicOn ? "default" : "secondary"}
+          >
+            {isMicOn ? <Mic /> : <MicOff />}{" "}
+            {isMicOn ? "Listening..." : "Start Speaking"}
           </Button>
         </div>
-      </div>
 
-      {/* Main Body */}
-      <div className="flex flex-1">
-        {/* Left: User */}
-        <div className="flex flex-col items-center justify-center w-1/2 border-r p-6">
-          <div className="w-64 h-48 bg-gray-200 rounded-xl flex items-center justify-center shadow-inner">
-            <User className="w-16 h-16 text-gray-500" />
+        {/* Right: Chat */}
+        <div className="flex flex-col flex-1 p-6 overflow-y-auto">
+          <div className="flex items-center gap-2 mb-3">
+            <Bot className="w-6 h-6 text-purple-600" />
+            <h2 className="font-semibold text-lg">AI Interviewer</h2>
           </div>
-          <div className="flex gap-4 mt-4">
-            <Button
-              variant={isMicOn ? "default" : "secondary"}
-              onClick={() => setIsMicOn((p) => !p)}
-            >
-              {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Right: AI + Transcript */}
-        <div className="flex flex-col w-1/2 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Bot className="w-8 h-8 text-purple-600" />
-            <h2 className="text-xl font-semibold">AI Interviewer</h2>
-          </div>
-
           <Card className="flex-1 overflow-y-auto">
-            <CardContent className="p-4 space-y-3">
-              {transcript.map((msg, idx) => (
+            <CardContent className="space-y-3 p-4">
+              {messages.map((msg, idx) => (
                 <div
                   key={idx}
                   className={`p-3 rounded-lg max-w-[80%] shadow-sm text-sm ${
-                    msg.sender === "ai"
+                    msg.role === "interviewer"
                       ? "bg-purple-100 text-purple-800 self-start"
                       : "bg-blue-100 text-blue-800 self-end ml-auto"
                   }`}
                 >
-                  <span className="font-semibold">
-                    {msg.sender === "ai" ? "AI:" : "You:"}
-                  </span>{" "}
-                  {msg.text}
+                  <b>{msg.role === "interviewer" ? "AI:" : "You:"}</b> {msg.content}
                 </div>
               ))}
+              {apiError && (
+                <div className="text-red-600 text-sm mt-2">{apiError}</div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Optional text input */}
-          <div className="mt-4 flex gap-2">
-            <input
-              type="text"
-              placeholder="Type your answer..."
-              className="flex-1 border rounded-lg px-3 py-2"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                  setTranscript((prev) => [
-                    ...prev,
-                    { sender: "user", text: e.currentTarget.value },
-                  ]);
-                  e.currentTarget.value = "";
-                }
-              }}
-            />
-            <Button
-              onClick={() => {
-                const input = document.querySelector("input");
-                if (input && input.value.trim()) {
-                  setTranscript((prev) => [
-                    ...prev,
-                    { sender: "user", text: input.value },
-                  ]);
-                  input.value = "";
-                }
-              }}
-            >
-              Send
-            </Button>
-          </div>
         </div>
+      </div>
+
+      {/* END INTERVIEW BUTTON */}
+      <div className="p-3 border-t flex justify-center bg-white">
+        <Button variant="destructive">
+          <PhoneOff className="w-4 h-4 mr-2" /> End Interview
+        </Button>
       </div>
     </div>
   );

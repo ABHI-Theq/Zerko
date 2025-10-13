@@ -53,19 +53,19 @@ model Interview {
   userId         String   @db.Uuid()
   user           User     @relation(fields: [userId], references: [id])
 
-
   post           String   
   jobDescription String   // full JD text or summary
   resume         String?  // parsed resume text OR link to uploaded file
-  interviewType  InterviewType @default(TECHNICAL)   // e.g. "technical", "behavioral", "system-design"
-  duration       Int      // time control in minutes
+  interviewType  InterviewType @default(TECHNICAL)
+  duration       Int      // in minutes
+  questions      Json?    // store generated questions list
 
   status         InterviewStatus   @default(STARTED) // scheduled | active | ended | completed
   startedAt      DateTime?
   endedAt        DateTime?
 
-  transcript     Json?    // running transcript of Q&A
-  feedbackreport       Json?    // AI feedback after interview (optional)
+  transcript     Json?    
+  feedbackreport Json?    
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

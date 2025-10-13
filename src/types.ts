@@ -50,3 +50,33 @@ export const InterviewCreationSchema=z.object({
 })
 
 export type InterviewCreation=z.infer<typeof InterviewCreationSchema>
+
+
+// src/types/questions.ts
+
+export interface InterviewQuestion {
+  id: number;
+  question: string;
+}
+// src/validation/questionsSchema.ts
+
+
+// Only validate questions list
+export const QuestionsListSchema = z.array(
+  z.object({
+    id: z.number(),
+    question: z.string().min(5, "Question must be at least 5 characters"),
+  })
+).nonempty("Questions must be generated");
+
+// TypeScript type
+export type QuestionsList = z.infer<typeof QuestionsListSchema>;
+
+export const QuestionSchema = z.object({
+  id: z.number(),
+  question: z.string().min(5, "Question is too short"),
+});
+
+
+
+export type Question = z.infer<typeof QuestionSchema>;
