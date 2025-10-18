@@ -1,11 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { QuestionsListSchema, QuestionsList } from "@/types";
+import { useInterviewCon } from "@/context/InterviewContext";
 
 interface QuestionGenerationProps {
   open: boolean;
@@ -13,7 +13,6 @@ interface QuestionGenerationProps {
   interviewId: string;
   interviewPost: string;
   jobDescription: string;
-  resumeUrl: string;
   interviewType: string;
   durationStr: string;
 }
@@ -24,67 +23,52 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
   interviewId,
   interviewPost,
   jobDescription,
-  resumeUrl,
   interviewType,
   durationStr,
 }) => {
   const [loading, setLoading] = useState(false);
+  const { interview, setInterview } = useInterviewCon();
   const router = useRouter();
 
   const generateAndSaveQuestions = async () => {
     setLoading(true);
     try {
-      // 1️⃣ Generate questions
-      console.log(interviewType);
-      
       const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/generate/questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           post: interviewPost,
           job_description: jobDescription,
-          resume_url: resumeUrl,
+          resumeData: interview.resumeData,
           interview_type: interviewType,
           duration: durationStr,
         }),
       });
 
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error("Failed to generate questions");
 
-      const quess = await res.json();
-      if (!quess.success || !quess.data) throw new Error("Invalid data from server");
+      let questionsList = data.data.questions;
+      if (typeof questionsList === "string") questionsList = JSON.parse(questionsList);
 
-      // 2️⃣ Validate using Zod
-      const questions: QuestionsList = QuestionsListSchema.parse(quess.data);
+      const questions: QuestionsList = QuestionsListSchema.parse(questionsList);
+      setInterview((prev) => ({ ...prev, questionsList: questions }));
 
       toast.success("Questions generated successfully!");
 
-      // 3️⃣ Save questions to the interview
-      const saveRes = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${interviewId}/update-questions`, {
+      // Save to DB
+      await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${interviewId}/update-questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questions }),
       });
 
-      const data=await saveRes.json()
-
-      if(data.error){
-        toast.error(`${data.error}`)
-        return;
-      }
-
-      console.log(data.interviewDets.questions);
-      
-
-      toast.success("Interview created with questions!");
+      toast.success("Redirecting to Interview...");
       onClose();
-
-      // 4️⃣ Redirect to interview page
       router.push(`/interview/start/${interviewId}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error generating questions";
-      toast.error(msg);
-      onClose(); // Drop back if unrecoverable
+      toast.error(err instanceof Error ? err.message : "Error generating questions");
+      onClose();
     } finally {
       setLoading(false);
     }
@@ -98,20 +82,13 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Generating Questions</DialogTitle>
+          <DialogTitle>Generating Questions...</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center p-6 gap-4">
           <p className="text-center">
-            {loading
-              ? "Please wait while we generate questions..."
-              : "Unable to generate questions. Closing dialog."}
+            {loading ? "Please wait while we generate questions..." : "Generation complete!"}
           </p>
           {loading && <Spinner className="size-10" />}
-          {!loading && (
-            <Button variant="destructive" onClick={onClose}>
-              Close
-            </Button>
-          )}
         </div>
       </DialogContent>
     </Dialog>

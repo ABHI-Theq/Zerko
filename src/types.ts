@@ -15,6 +15,7 @@ export const userSigninSchema=z.object({
 })
 
 export type UserSignin=z.infer<typeof userSigninSchema>
+
 export enum InterviewType {
   TECHNICAL = "TECHNICAL",
   BEHAVIORAL = "BEHAVIORAL",
@@ -51,21 +52,18 @@ export const InterviewCreationSchema=z.object({
 
 export type InterviewCreation=z.infer<typeof InterviewCreationSchema>
 
-
 // src/types/questions.ts
-
 export interface InterviewQuestion {
   id: number;
   question: string;
 }
+
 // src/validation/questionsSchema.ts
-
-
 // Only validate questions list
 export const QuestionsListSchema = z.array(
   z.object({
     id: z.number(),
-    question: z.string().min(5, "Question must be at least 5 characters"),
+    question: z.string().min(5, "Question must be at least 5 characters")
   })
 ).nonempty("Questions must be generated");
 
@@ -77,6 +75,15 @@ export const QuestionSchema = z.object({
   question: z.string().min(5, "Question is too short"),
 });
 
-
-
 export type Question = z.infer<typeof QuestionSchema>;
+
+export type InterviewDetails={
+  name:string | null,
+  post: string | null,
+  jobDescription: string | null,
+  resumeUrl: string| null,
+  interviewType: string| null,
+  questionsList: QuestionsList | null,
+  resumeData:string | null,
+  duration:string | null
+}
