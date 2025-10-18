@@ -4,6 +4,7 @@ import {Toaster} from "react-hot-toast"
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import Navbar from "@/components/Navbar";
+import { InterviewProvider } from "@/context/InterviewContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,11 +45,12 @@ export default function RootLayout({
   />
 
  
-
+        <InterviewProvider>
         <SessionProvider> 
           {children}
         <Toaster position="bottom-right"/>
         </SessionProvider>
+        </InterviewProvider>
         </div>
       </body>
     </html>

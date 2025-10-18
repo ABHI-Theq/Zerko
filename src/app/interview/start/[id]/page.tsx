@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Mic, MicOff, Bot, User, PhoneOff } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import InterviewHeader from "@/components/InterviewHeader";
+import { useInterviewCon } from "@/context/InterviewContext";
+import { useRouter } from "next/navigation";
 
 declare global {
   interface Window {
@@ -21,16 +23,17 @@ export default function InterviewPage() {
   const silenceTimerRef = useRef<any>(null);
   const [isMicOn, setIsMicOn] = useState(false);
 
+  const {interview,setInterview}=useInterviewCon()
+
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const userName = "Abhishek";
-  const post = "Full Stack Developer";
-  const job_desc = "Looking for React and Node.js developer...";
-  const resume = "Experienced in building scalable APIs...";
-  const questions = [
-    { id: 1, question: "Tell me about your experience in web development." },
-    { id: 2, question: "How do you handle scalability in backend systems?" },
-  ];
+  const userName = interview.name;
+  const post = interview.post;
+  const job_description = interview.jobDescription;
+  const resumeData = interview.resumeData;
+  const questions = interview.questionsList;
+
+  const router=useRouter()
 
   const speak = (text: string) => {
     const utter = new SpeechSynthesisUtterance(text);
@@ -40,18 +43,28 @@ export default function InterviewPage() {
   };
 
   // --- Initialize Interview ---
+  
   useEffect(() => {
     const initInterview = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/interview", {
+                  console.log(JSON.stringify({
+          post,
+          job_description,
+          resumeData,
+          questions,
+          messages: [],
+        }))
+        const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/interview/next`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             post,
-            job_desc,
-            resume,
+            job_description,
+            resumeData,
             questions,
             messages: [],
+            interview_type:interview.interviewType,
+            duration:interview.duration
           }),
         });
 
@@ -113,17 +126,20 @@ export default function InterviewPage() {
     setMessages(newMessages);
 
     try {
-      const res = await fetch("http://localhost:8000/api/interview", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/interview/next`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           post,
-          job_desc,
-          resume,
+          job_description,
+          resumeData,
           questions,
           messages: newMessages,
+                      interview_type:interview.interviewType,
+            duration:interview.duration
         }),
       });
+      
 
       if (!res.ok) throw new Error(`API returned ${res.status}`);
 
@@ -149,7 +165,7 @@ export default function InterviewPage() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* HEADER */}
-     <InterviewHeader post={post}/>
+     <InterviewHeader post={post as string}/>
 
       {/* BODY */}
       <div className="flex flex-1 p-4">
@@ -198,7 +214,9 @@ export default function InterviewPage() {
 
       {/* END INTERVIEW BUTTON */}
       <div className="p-3 border-t flex justify-center bg-white">
-        <Button variant="destructive">
+        <Button variant="destructive" onClick={()=>{
+          router.push("/dashboard")
+        }}>
           <PhoneOff className="w-4 h-4 mr-2" /> End Interview
         </Button>
       </div>

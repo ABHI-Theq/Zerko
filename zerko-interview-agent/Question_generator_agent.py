@@ -38,7 +38,7 @@ def parse_Resume(resumeUrl: str) -> str:
     return page_content
 
 
-def get_questions(post: str, job_description: str, ResumeUrl: str, interviewType: str, duration: str):
+def get_questions(post: str, job_description: str, resume_data: str, interviewType: str, duration: str):
     # ---- Define structured output schema ----
     response_schemas = [
         ResponseSchema(
@@ -107,8 +107,6 @@ Also include an "interview_summary" field describing what the interview will foc
         }
     )
 
-    # ---- Load Resume ----
-    resume_data = parse_Resume(ResumeUrl)
 
     # ---- Final Prompt ----
     final_prompt = prompt.format(
@@ -124,18 +122,7 @@ Also include an "interview_summary" field describing what the interview will foc
 
     # Try to call the LLM robustly (support different wrappers)
     try:
-        # prefer callable behavior
-        if callable(llm):
-            response = llm(final_prompt)
-        elif hasattr(llm, "invoke"):
-            response = llm.invoke(final_prompt)
-        elif hasattr(llm, "generate"):
-            # some wrappers use generate -> use first text
-            gen = llm.generate(final_prompt)
-            response = gen
-        else:
-            # fallback: try direct call
-            response = llm(final_prompt)
+        response=llm.invoke(final_prompt)
     except Exception as e:
         raise RuntimeError(f"LLM invocation failed: {e}")
 
@@ -144,7 +131,7 @@ Also include an "interview_summary" field describing what the interview will foc
         text_output = response
     else:
         # prefer 'content' attribute, then 'text', then str()
-        text_output = getattr(response, "content", None) or getattr(response, "text", None) or str(response)
+        text_output = response.content
 
     # ---- Parse Structured Output ----
     try:
@@ -167,8 +154,8 @@ if __name__ == "__main__":
         job_description="""
 We are seeking a highly skilled and innovative Full Stack Developer to join our dynamic engineering team at a company that thrives on cutting-edge technology and large-scale impact, similar to Google. The ideal candidate will be proficient in designing, developing, and deploying scalable web applications using modern front-end frameworks (such as React, Angular, or Vue) and robust back-end technologies (such as Node.js, Python, or Java). You will collaborate closely with cross-functional teams to build seamless user experiences, optimize system performance, and implement efficient, secure APIs. A strong foundation in cloud platforms (like Google Cloud or AWS), databases (SQL/NoSQL), and DevOps practices is essential. If you are passionate about solving complex problems, writing clean and maintainable code, and contributing to products that reach millions of users worldwide, we’d love to have you on our team.
 """,
-        ResumeUrl="https://res.cloudinary.com/divvzs1rt/image/upload/v1760166833/resumes/file_sorwxe.pdf",
-        interviewType="Technical",
+        ResumeUrl="https://res.cloudinary.com/divvzs1rt/image/upload/v1760377410/resumes/file_ttbg0x.pdf",
+        interviewType="TECHNICAL",
         duration="30m"
     )
     print("Output:", out)

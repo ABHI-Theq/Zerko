@@ -1,8 +1,8 @@
 # app.py
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Dict, Literal
+from pydantic import BaseModel,Field
+from typing import List, Dict, Literal,Annotated
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
@@ -22,6 +22,7 @@ app = FastAPI(title="AI Interview Agent API")
 origins = [
     "http://localhost:3000",
     "http://localhost:8080",
+    "*"
 ]
 # optionally include environment variable origin if set
 frontend_origin = os.getenv("NEXT_PUBLIC_URL")
@@ -43,7 +44,7 @@ app.add_middleware(
 class GenerateQuestionsRequest(BaseModel):
     post: str
     job_description: str
-    resume_url: str
+    resumeData: str
     interview_type: Literal["TECHNICAL", "BEHAVIORAL", "HR", "SYSTEM_DESIGN"]
     duration: str  # e.g., "30m"
 
@@ -51,12 +52,14 @@ class GenerateQuestionsRequest(BaseModel):
 class InterviewRequest(BaseModel):
     post: str
     job_description: str
-    resume_url: str
+    resumeData: str
     interview_type: Literal["TECHNICAL", "BEHAVIORAL", "HR", "SYSTEM_DESIGN"]
     duration: str
-    questions_list: List[Dict]  # Pre-generated questions
+    questions: List[Dict]  # Pre-generated questions
     messages: List[Dict]  # Chat history
 
+class ParseResume(BaseModel):
+    resumeUrl: Annotated[str,Field(description="URL of the resume to be parsed")]
 
 # ----------------------------
 # Healthcheck Endpoint
@@ -70,6 +73,20 @@ def healthcheck():
     }
 
 
+
+#-----------------------------
+# Resume parsing Endpoint
+#-----------------------------
+@app.post("/api/parse")
+def get_resume_data(req: ParseResume):
+    try:
+        logging.info("Parsing resume: %s", req.resumeUrl)
+        data = parse_Resume(req.resumeUrl)
+        return {"success": True, "resumeData": data}
+    except Exception as e:
+        logging.exception("Error parsing resume")
+        raise HTTPException(status_code=500, detail=f"Error parsing resume: {e}")
+
 # ----------------------------
 # Generate Questions Endpoint
 # ----------------------------
@@ -80,7 +97,7 @@ def generate_questions(req: GenerateQuestionsRequest):
         output = get_questions(
             post=req.post,
             job_description=req.job_description,
-            ResumeUrl=req.resume_url,
+            resume_data=req.resumeData,
             interviewType=req.interview_type,
             duration=req.duration
         )
@@ -99,14 +116,13 @@ def get_next_interview_question(req: InterviewRequest):
     try:
         logging.info("Interview next request for post: %s", req.post)
         # Parse resume content (simplified for interview agent)
-        resume_data = parse_Resume(req.resume_url)
 
         # Call the interview agent function (ensure your module exposes a callable fn)
         result = interview_agent_fn(
             Post=req.post,
             JobDescription=req.job_description,
-            resume_data=resume_data,
-            questions_list=req.questions_list,
+            resume_data=req.resumeData,
+            questions_list=req.questions,
             messages=req.messages
         )
 

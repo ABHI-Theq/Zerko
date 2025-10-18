@@ -2,12 +2,19 @@
 import InterviewsBoard from '@/components/interview-boards'
 import InterviewDialog from '@/components/InterviewDialog'
 import { Button } from '@/components/ui/button'
+import { useInterviewCon } from '@/context/InterviewContext'
 import { useSession } from 'next-auth/react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const {data:session,status}=useSession();
+  const {interview,setInterview}={...useInterviewCon()}
+  useEffect(() => {
+  if (session?.user && setInterview) {
+    setInterview(prev => ({ ...prev, name: session.user!.name! }));
+  }
+}, [session?.user?.name, setInterview]);
   return (
         <div className='relative flex items-start justify-center flex-col gap-4 p-2 w-full'>
       <div className="flex items-start bg-white shadow-lg justify-center p-4 gap-2 flex-col  rounded-lg w-full ">

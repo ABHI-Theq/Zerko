@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,12 +10,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import QuestionGeneration from "./QuestionGeneration";
 import { InterviewCreationSchema, InterviewType } from "@/types";
+import { useInterviewCon } from "@/context/InterviewContext";
+import ParsingResume from "./ParsingResume";
+import QuestionGeneration from "./QuestionGeneration";
 
 interface InterviewDialogProps {
   open?: boolean;
@@ -23,25 +30,25 @@ interface InterviewDialogProps {
 }
 
 const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [step, setStep] = useState<number>(1);
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1);
   const [post, setPost] = useState<string | null>(null);
-  const [postError, setPostError] = useState<string>("");
+  const [postError, setPostError] = useState("");
   const [jobDescription, setJobDescription] = useState<string | null>(null);
   const [resume, setResume] = useState<File | null>(null);
-  const [resumeError, setResumeError] = useState<string>("");
-  const [duration, setDuration] = useState<string>("");
-  const [interviewType, setInterviewType] = useState<string>("");
-  const [resumeUrl,setResumeUrl]=useState<string>("")
+  const [resumeError, setResumeError] = useState("");
+  const [duration, setDuration] = useState("");
+  const [interviewType, setInterviewType] = useState("");
+  const [resumeUrl, setResumeUrl] = useState("");
+  const [currentInterviewId, setCurrentInterviewId] = useState("");
+  const [progressStep, setProgressStep] = useState<"upload" | "parse" | "generate" | "done" | null>(null);
+  const { setInterview } = { ...useInterviewCon() };
 
-  const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
-  const [currentInterviewId, setCurrentInterviewId] = useState<string>("");
-
-  const router = useRouter();
-
+  // Handle Start Interview
   const handleStartInterview = async () => {
     if (loading) return;
     setLoading(true);
+    setProgressStep("upload");
 
     const parsed = InterviewCreationSchema.safeParse({
       post,
@@ -52,7 +59,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
     });
 
     if (parsed.error) {
-      toast.error(`${parsed.error.issues[0].message}`);
+      toast.error(parsed.error.issues[0].message);
       setLoading(false);
       return;
     }
@@ -73,34 +80,58 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
       const data = await res.json();
 
       if (data.error) {
-        console.log(data.error);
-        
-        toast.error(`${data.error}`);
+        toast.error(data.error);
         return;
       }
 
-      const interviewId = data.interviewDets.id;
-      setCurrentInterviewId(interviewId);
-      setResumeUrl(data.interviewDets.resume)
+      setCurrentInterviewId(data.interviewDets.id);
+      //  setting sup resume url
+      let Rurl=data.interviewDets.resume;
+      if(Rurl){
+        Rurl=Rurl.replace("/upload/f_jpg/","/upload/")
+        console.log(Rurl);
+        setResumeUrl(Rurl);
+        
+      }
 
-      // Open Question Generation Dialog
-      setQuestionDialogOpen(true);
+      
 
-      onOpenChange?.(false); // Close main dialog
+      setProgressStep("parse");
+      onOpenChange?.(false);
     } catch (error) {
-      const errMsg = error instanceof Error ? error.message : "Error initiating interview";
-      toast.error(errMsg);
+      toast.error(
+        error instanceof Error ? error.message : "Error initiating interview"
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  // Update Interview Context when resumeUrl is ready
+  useEffect(() => {
+    if (resumeUrl && setInterview) {
+      setInterview((prev) => ({
+        ...prev,
+        post: post,
+        interviewType: interviewType,
+        jobDescription: jobDescription,
+        resumeUrl: resumeUrl,
+        duration:`${duration}m`
+      }));
+      console.log("Interview context updated successfully");
+      
+      
+    }
+  }, [resumeUrl, post, interviewType, jobDescription, setInterview]);
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{step === 1 ? "Upload Details" : "Interview Settings"}</DialogTitle>
+            <DialogTitle>
+              {step === 1 ? "Upload Details" : "Interview Settings"}
+            </DialogTitle>
             <DialogDescription>
               {step === 1
                 ? "Fill in the job details and upload a resume."
@@ -128,7 +159,9 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                     setPost(value);
                   }}
                 />
-                {postError && <p className="text-red-500 text-xs mt-1">{postError}</p>}
+                {postError && (
+                  <p className="text-red-500 text-xs mt-1">{postError}</p>
+                )}
               </div>
 
               <div>
@@ -165,11 +198,15 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                     setResume(file);
                   }}
                 />
-                {resumeError && <p className="text-red-500 text-xs mt-1">{resumeError}</p>}
+                {resumeError && (
+                  <p className="text-red-500 text-xs mt-1">{resumeError}</p>
+                )}
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => onOpenChange?.(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => onOpenChange?.(false)}>
+                  Cancel
+                </Button>
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!jobDescription || !resume || !!postError || !post}
@@ -208,25 +245,23 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                       <SelectItem value="TECHNICAL">Technical</SelectItem>
                       <SelectItem value="HR">HR</SelectItem>
                       <SelectItem value="BEHAVIORAL">Behavioral</SelectItem>
-                      <SelectItem value="SYSTEM_DESIGN">System Design</SelectItem>
+                      <SelectItem value="SYSTEM_DESIGN">
+                        System Design
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  Back
+                </Button>
                 <Button
                   onClick={handleStartInterview}
                   disabled={!duration || !interviewType}
                 >
-                  {loading ? (
-                    <div className="relative flex items-center justify-center">
-                      <div className="w-6 h-6 border-4 border-t-white border-b-white border-l-transparent border-r-transparent rounded-full animate-spin"></div>
-                    </div>
-                  ) : (
-                    <p>Start Interview</p>
-                  )}
+                  {loading ? "Uploading..." : "Start Interview"}
                 </Button>
               </div>
             </div>
@@ -234,17 +269,27 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Question Generation Dialog */}
-      {currentInterviewId && resumeUrl && (
+      {/* Step 2 → Parsing */}
+      {progressStep === "parse" && resumeUrl && (
+        <ParsingResume
+          open={true}
+          onClose={() => setProgressStep(null)}
+          resumeUrl={resumeUrl}
+          onParsed={() => setProgressStep("generate")}
+        />
+      )}
+
+      {/* Step 3 → Question Generation */}
+      {progressStep === "generate" && currentInterviewId && (
         <QuestionGeneration
-          open={questionDialogOpen}
-          onClose={() =>{
-            setStep(1)
-             setQuestionDialogOpen(false)}}
+          open={true}
+          onClose={() => {
+            setProgressStep("done");
+            setStep(1);
+          }}
           interviewId={currentInterviewId}
           interviewPost={post ?? ""}
           jobDescription={jobDescription ?? ""}
-          resumeUrl={resumeUrl}
           interviewType={interviewType}
           durationStr={`${duration}m`}
         />
