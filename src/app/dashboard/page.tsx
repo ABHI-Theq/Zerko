@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react'
 const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const {data:session,status}=useSession();
-  const {interview,setInterview}={...useInterviewCon()}
+  const {interview,setInterview}=useInterviewCon()
   useEffect(() => {
   if (session?.user && setInterview) {
     setInterview(prev => ({ ...prev, name: session.user!.name! }));
@@ -31,7 +31,8 @@ const Dashboard = () => {
           Create interview
         </Button>
       </div>
-      <hr  className=' my-4 w-full  border-1 border-t-black'/>
+      <hr  className=' my-2 w-full  border-1 border-t-black'/>
+      <h2 className='text-2xl font-serif'>Created Interviews</h2>
       <InterviewsBoard/>
       <InterviewDialog
         open={dialogOpen}

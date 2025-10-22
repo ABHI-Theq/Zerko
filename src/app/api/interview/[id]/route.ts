@@ -49,6 +49,11 @@ export async function DELETE(req: NextRequest,{params}:{params:{id:string}}){
                 id:id
             }
         })
+        return NextResponse.json({
+            status:200,
+            success:true,
+            messages:"Interview Deleted successfully"
+        })
     } catch (error) {
         
     }

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import {Toaster} from "react-hot-toast"
+
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
-import Navbar from "@/components/Navbar";
 import { InterviewProvider } from "@/context/InterviewContext";
+import { Suspense } from "react";
+import { InterviewAllProvider } from "@/context/InterviewAllContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +33,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
+      <Suspense>
          <div className="min-h-screen w-full bg-[#e2e2e2] relative text-gray-800" >
     <div
     className="absolute inset-0 z-0 pointer-events-none"
@@ -44,14 +47,16 @@ export default function RootLayout({
     }}
   />
 
- 
+        <InterviewAllProvider>
         <InterviewProvider>
         <SessionProvider> 
           {children}
         <Toaster position="bottom-right"/>
         </SessionProvider>
         </InterviewProvider>
+        </InterviewAllProvider>
         </div>
+        </Suspense>
       </body>
     </html>
   );
