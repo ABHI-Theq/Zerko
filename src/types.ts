@@ -78,6 +78,7 @@ export const QuestionSchema = z.object({
 export type Question = z.infer<typeof QuestionSchema>;
 
 export type InterviewDetails={
+  id:string | null,
   name:string | null,
   post: string | null,
   jobDescription: string | null,

@@ -1,95 +1,112 @@
+# AI_interview_agent.py
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
+import logging
 load_dotenv()
 
 
-def interview_agent_auto_number(Post: str, JobDescription: str, resume_data: str, questions_list: list, messages: list):
+def interview_agent_auto_number(
+    Post: str,
+    JobDescription: str,
+    resume_data: str,
+    questions_list: list,
+    messages: list,
+    time_left: int = None,
+    force_next: bool = False   # <-- New feature!
+):
     """
-    Simplified AI Interview Agent
-    Returns only a single text response as 'AIResponse'
+    AI Interview Agent with:
+    - Time-awareness
+    - Follow-up questions support
+    - Moves to next question after follow-up
+    - Signals last question / end of interview based on time_left
+    - Optional force to ask ONLY next question in sequence (force_next)
     """
 
+    # 1. Load the LLM (Gemini)
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.6)
 
-    # ---- Check if interview just started ----
+    # 2. Time thresholds (ms)
+    LAST_QUESTION_THRESHOLD = 2 * 60 * 1000   # 2 minutes
+    END_INTERVIEW_THRESHOLD = 30 * 1000       # 30 seconds
+
+    # 3. Track which questions have been asked
+    asked_question_ids = [
+        int(m.get("question_id", -1))
+        for m in messages
+        if m["role"] == "interviewer" and "question_id" in m
+    ]
+    next_question_idx = len(asked_question_ids) if asked_question_ids else 0
+    next_question_obj = (
+        questions_list[next_question_idx] if next_question_idx < len(questions_list) else None
+    )
+    next_question = next_question_obj["question"] if next_question_obj else None
+
+    # 4. If first message, greet + ask first question only.
     if not messages:
-        first_question = questions_list[0]["question"]
+        greeting = (
+            f"Welcome to the interview for the position of {Post}! "
+            f"I’ll ask you a few questions based on your profile. Let’s begin!\n\n{questions_list[0]['question']}"
+        )
         return {
-            "AIResponse": f"Welcome to the interview for the post {Post}! Let's get started.\n\n{first_question}"
+            "AIResponse": greeting,
+            "endInterview": False,
+            "question_id": questions_list[0].get("id") if "id" in questions_list[0] else 0
         }
 
-    # ---- Ongoing interview ----
-    recent_messages = messages[-5:] if len(messages) > 5 else messages
+    # 5. Time check for warning or ending interview
+    end_interview = False
+    extra_note = ""
+    if time_left is not None:
+        if time_left <= END_INTERVIEW_THRESHOLD:
+            end_interview = True
+            extra_note = (
+                "\n\nThis concludes our interview. "
+                "Thank you for your time and thoughtful answers! We will get back to you soon."
+            )
+        elif time_left <= LAST_QUESTION_THRESHOLD:
+            extra_note = "\n\nWe are approaching the end, this will be your final question."
 
-    prompt_template = PromptTemplate(
-        template="""
-You are a professional hiring manager conducting a candidate-facing interview.
-Use polite, encouraging, and professional tone.
+    # 6. Optionally force strict sequential asking
+    if force_next and next_question:
+        response_text = next_question + extra_note
+        response_id = next_question_obj.get("id") if next_question_obj and "id" in next_question_obj else next_question_idx
+    else:
+        recent_messages = messages[-5:] if len(messages) > 5 else messages
+        prompt_template = PromptTemplate(
+            template="""
+You are a professional interviewer.
+Be polite, concise, and engaging.
+You can ask the next question from the predefined list or a follow-up based on candidate's previous answer.
+Do not include analysis or commentary, only what should be spoken to the candidate.
 
-You are provided with:
-1. Job Description
-2. Candidate Resume
-3. A pre-generated ordered list of interview questions
-4. Full chat history so far (including which questions were asked)
-5. Candidate's last answer
-
-Your task:
-- Respond naturally as the next thing to say to the candidate.
-- You do NOT need to output analysis, question numbers, or JSON.
-- Only produce the text response that should be shown to the candidate.
-
-##Post:
-{post}
-
-### Job Description:
-{JobDescription}
-
-### Candidate Resume:
-{resume_data}
-
-### Predefined Question List (Ordered):
+Post: {post}
+Job Description: {JobDescription}
+Candidate Resume: {resume_data}
+Ordered Question List:
 {questions_list}
-
-### Chat History:
+Chat History:
 {messages}
 
-Respond below:
+Next line (what interviewer should say):
 """,
-        input_variables=["post", "JobDescription", "resume_data", "questions_list", "messages"]
-    )
+            input_variables=["post", "JobDescription", "resume_data", "questions_list", "messages"]
+        )
+        formatted_prompt = prompt_template.format(
+            post=Post,
+            JobDescription=JobDescription.strip(),
+            resume_data=resume_data.strip(),
+            questions_list="\n".join([f"{q['id']}. {q['question']}" for q in questions_list]),
+            messages="\n".join([f"{m['role']}: {m['content']}" for m in recent_messages])
+        )
+        response = llm.invoke(formatted_prompt)
+        response_text = response.content.strip() + extra_note
+        response_id = next_question_obj.get("id") if next_question_obj and "id" in next_question_obj else next_question_idx
 
-    formatted_prompt = prompt_template.format(
-        post=Post,
-        JobDescription=JobDescription.strip(),
-        resume_data=resume_data.strip()[:2000],
-        questions_list="\n".join([f"{q['id']}. {q['question']}" for q in questions_list]),
-        messages="\n".join([f"{m['role']}: {m['content']}" for m in recent_messages])
-    )
-
-    response = llm.invoke(formatted_prompt)
-
-    # Just return the text response
-    return {"AIResponse": response.content}
-
-
-# ---------------- Example Usage ----------------
-if __name__ == "__main__":
-    questions_list = [
-        {"id": 1, "question": "Can you explain how you would design a scalable API for a large web app?"},
-        {"id": 2, "question": "What challenges did you face in your last full-stack project?"},
-        {"id": 3, "question": "How do you ensure performance optimization in your backend code?"}
-    ]
-
-    messages_ongoing = [
-        {"role": "interviewer", "content": questions_list[0]["question"]},
-        {"role": "candidate", "content": "I implemented caching and load balancing to scale APIs efficiently."}
-    ]
-
-    JobDescription = "Looking for a Full Stack Developer skilled in React, Node.js, and scalable backend design."
-    resume_data = "Experienced software engineer with strong proficiency in JavaScript, React, and backend APIs using Node.js."
-
-    result = interview_agent_auto_number("Full Stack Developer", JobDescription, resume_data, questions_list, messages_ongoing)
-
-    print("\n🧩 AI Response:\n")
-    print(result["AIResponse"])
+    return {
+        "AIResponse": response_text,
+        "endInterview": end_interview,
+        "question_id": response_id   # optionally track which question was asked
+    }

@@ -4,7 +4,7 @@ const InterviewPageLayout = ({children}:{children:React.ReactNode}) => {
   return (
 
     <>
-    <div className='bg-blue-600 Z-10'>
+    <div className='bg-white Z-10'>
         {children}
     </div>
     </>

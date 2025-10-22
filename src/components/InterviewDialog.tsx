@@ -228,6 +228,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                       <SelectValue placeholder="Select duration" />
                     </SelectTrigger>
                     <SelectContent>
+                                            <SelectItem value="5">5 Minutes</SelectItem>
                       <SelectItem value="15">15 Minutes</SelectItem>
                       <SelectItem value="30">30 Minutes</SelectItem>
                       <SelectItem value="60">1 Hour</SelectItem>
