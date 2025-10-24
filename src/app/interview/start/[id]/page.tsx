@@ -1,29 +1,28 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic, MicOff, Bot, User, PhoneOff } from "lucide-react";
+import { Bot, User, PhoneOff } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import InterviewHeader from "@/components/InterviewHeader";
 import { useInterviewCon } from "@/context/InterviewContext";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 declare global {
-  interface Window {
-    webkitSpeechRecognition: any;
-    SpeechRecognition: any;
-  }
+  interface Window { webkitSpeechRecognition: any; SpeechRecognition: any; }
 }
 
 export default function InterviewPage() {
   const { interview } = useInterviewCon();
   const router = useRouter();
+  const params = useParams();
+  const id = params.id;
 
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<{ role: string; content: string; question_id?: number }[]>([]);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [agentThinking, setAgentThinking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<any>(null);
 
@@ -31,28 +30,30 @@ export default function InterviewPage() {
   const EndTime = Number(interview.duration?.replace("m", "") || 5) * 60 * 1000 + Date.now();
   const [timeLeft, setTimeLeft] = useState<number>(EndTime - Date.now());
   const [interviewEnded, setInterviewEnded] = useState(false);
+  const [lastQuestionFlag, setLastQuestionFlag] = useState(false); // signal from backend
+  const [endPending, setEndPending] = useState(false); // show "waiting for AI to finish/end" after timer is out
 
   const post = interview.post;
   const job_description = interview.jobDescription;
   const resumeData = interview.resumeData;
   const questions = interview.questionsList;
+  const force_next = false;
 
-  // ====
-  // SET THIS TO TRUE TO FORCE SEQUENTIAL INTERVIEW; FALSE FOR HYBRID/FREE FLOW
-  const force_next = false; // <-- CHANGE TO TRUE FOR SEQUENTIAL ONLY!
-  // ====
-
-
+  // -------- TTS + Next Listening ----------
   const speak = (text: string) => {
-    const utter = new SpeechSynthesisUtterance(text);
+    const utter = new window.SpeechSynthesisUtterance(text);
     utter.lang = "en-US";
     utter.rate = 1.05;
+    utter.onend = () => {
+      if (!interviewEnded && !endPending) startListening();
+    };
     window.speechSynthesis.speak(utter);
   };
 
-  // ----------------- INIT INTERVIEW -----------------
+  // ------------- INIT INTERVIEW -------------
   useEffect(() => {
     const initInterview = async () => {
+      setAgentThinking(true);
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/interview/next`, {
           method: "POST",
@@ -65,42 +66,51 @@ export default function InterviewPage() {
             messages: [],
             interview_type: interview.interviewType,
             time_left: timeLeft,
-            force_next // <<< --- Always send this to API!
+            force_next
           }),
         });
         if (!res.ok) throw new Error(`API returned ${res.status}`);
         const data = await res.json();
-        // Use the returned question_id from backend
-        const aiMsg = { role: "interviewer", content: data.data.AIResponse, question_id: data.data.question_id };
-        setMessages([aiMsg]);
-        speak(`${data.data.AIResponse}`);
+        setMessages([{
+          role: "interviewer",
+          content: data.data.AIResponse,
+          question_id: data.data.question_id
+        }]);
+        setLastQuestionFlag(!!data.data.lastQuestion);
+        speak(data.data.AIResponse);
       } catch (err) {
-        console.error("Init failed:", err);
         setApiError("Interview agent is not working.");
         setMessages([{ role: "interviewer", content: "Interview agent is not working." }]);
       } finally {
         setLoading(false);
+        setAgentThinking(false);
       }
     };
     initInterview();
     return cleanup;
+    // eslint-disable-next-line
   }, []);
 
-  // ----------------- TIMER -----------------
+  // ----------- TIMER: Now don't end instantly if endPending -----------
   useEffect(() => {
     if (interviewEnded) return;
-    if (timeLeft <= 0) {
-      endInterview(true);
+    if (timeLeft <= 0 && !agentThinking && !isMicOn) {
+      // Only truly end if not waiting for AI reply or user reply
+      if (!endPending) endInterview(true);
       return;
+    }
+    if (timeLeft <= 0 && (agentThinking || isMicOn)) {
+      // Timer out, but answer/chat not done!
+      setEndPending(true);
     }
     const timer = setInterval(() => setTimeLeft((t) => t - 1000), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, interviewEnded]);
+  }, [timeLeft, interviewEnded, agentThinking, isMicOn, endPending]);
 
-  // ----------------- START LISTENING -----------------
+  // ----------- MIC LOGIC -----------
   const startListening = () => {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("Speech Recognition not supported in your browser.");
+      alert("Speech Recognition not supported.");
       return;
     }
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -108,29 +118,33 @@ export default function InterviewPage() {
     recognition.continuous = true;
     recognition.interimResults = false;
     recognitionRef.current = recognition;
-
     recognition.onresult = (event: any) => {
-      // Use latest result for transcript
       const transcript = event.results[event.resultIndex][0].transcript.trim();
+      recognitionRef.current.lastTranscript = transcript;
       clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = setTimeout(() => {
-        recognition.stop();
-        sendToAI(transcript);
-      }, 10000); // 10s silence
+      silenceTimerRef.current = setTimeout(() => recognition.stop(), 10000);
     };
-
     recognition.onend = () => {
       setIsListening(false);
       setIsMicOn(false);
+      if (recognitionRef.current?.lastTranscript) {
+        handleAnswer(recognitionRef.current.lastTranscript);
+        recognitionRef.current.lastTranscript = "";
+      } else {
+        handleAnswer("No answer detected.");
+      }
     };
-
+    recognition.onerror = (_event:SpeechRecognition) => {
+      setIsListening(false); setIsMicOn(false);
+      handleAnswer("Sorry, could not hear any response.");
+    };
     recognition.start();
-    setIsListening(true);
-    setIsMicOn(true);
+    setIsListening(true); setIsMicOn(true);
   };
 
-  // ----------------- SEND ANSWER TO AI -----------------
-  const sendToAI = async (userText: string) => {
+  // ---------- MAIN INTERVIEW LOGIC ----------
+  const handleAnswer = async (userText: string) => {
+    setAgentThinking(true);
     const newMessages = [...messages, { role: "candidate", content: userText }];
     setMessages(newMessages);
     try {
@@ -138,67 +152,60 @@ export default function InterviewPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          post,
-          job_description,
-          resumeData,
+          post, job_description, resumeData,
           questions,
           messages: newMessages,
           interview_type: interview.interviewType,
-          time_left: timeLeft,
-          force_next // <<< --- Always send this to API!
+          time_left: EndTime - Date.now(),
+          force_next
         }),
       });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
-      // Save both AI response and question_id for tracking
-      const aiMsg = {
+      setMessages((prev) => [...prev, {
         role: "interviewer",
         content: data.data.AIResponse,
         question_id: data.data.question_id
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+      }]);
+      setLastQuestionFlag(!!data.data.lastQuestion);
+
       speak(data.data.AIResponse);
-      console.log(data);
-      
 
       if (data.data.endInterview) {
-        setTimeout(() => endInterview(true), 5000);
+        setTimeout(() => endInterview(true), 8000); // let last message finish
+      } else {
+        // if timer had run out, but last interaction not finished, allow that to finish
+        if (timeLeft <= 0) {
+          setTimeout(() => endInterview(true), 8000); // ensures close after last message
+        }
       }
     } catch (err) {
-      console.error("AI response failed:", err);
-      const errorMsg = { role: "interviewer", content: "Interview agent is not working." };
-      setMessages((prev) => [...prev, errorMsg]);
       setApiError("Interview agent is not working.");
     }
+    setAgentThinking(false);
+    setEndPending(false);
   };
 
-  // ----------------- CLEANUP -----------------
+  // --------- CLEANUP ETC ----------
   const cleanup = () => {
     if (recognitionRef.current) recognitionRef.current.stop();
     window.speechSynthesis.cancel();
     recognitionRef.current = null;
+    clearTimeout(silenceTimerRef.current);
   };
 
-  // ----------------- END INTERVIEW -----------------
   const endInterview = async (auto = false) => {
     if (interviewEnded) return;
     setInterviewEnded(true);
     cleanup();
-
-    // Send final transcript
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/update-transcript`, {
+      await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${id}/update-transcript`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages }),
       });
-    } catch (err) {
-      console.error("Failed to update transcript:", err);
-    }
-
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, auto ? 3000 : 500);
+    } catch (err) { /* ignore */ }
+    setTimeout(() => { router.push("/dashboard"); }, auto ? 3000 : 500);
   };
 
   if (loading)
@@ -217,13 +224,17 @@ export default function InterviewPage() {
           <div className="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center">
             <User className="w-10 h-10 text-blue-600" />
           </div>
-          <Button
-            onClick={startListening}
-            className="mt-4"
-            variant={isMicOn ? "default" : "secondary"}
-          >
-            {isMicOn ? <Mic /> : <MicOff />} {isMicOn ? "Listening..." : "Start Speaking"}
-          </Button>
+          <p className="mt-6 text-sm text-gray-700">
+            {apiError
+              ? "System error."
+              : endPending
+              ? "Interview ending... waiting for AI to finish."
+              : isMicOn
+              ? "Listening... Please answer the question."
+              : agentThinking
+              ? "Bot is thinking..."
+              : "Waiting for your turn to answer."}
+          </p>
           <p className="mt-2 text-xs text-gray-600">
             Time left: {Math.floor(timeLeft / 60000)}m {Math.floor((timeLeft % 60000) / 1000)}s
           </p>
@@ -243,8 +254,7 @@ export default function InterviewPage() {
                     msg.role === "interviewer"
                       ? "bg-purple-100 text-purple-800 self-start"
                       : "bg-blue-100 text-blue-800 self-end ml-auto"
-                  }`}
-                >
+                  }`}>
                   <b>{msg.role === "interviewer" ? "AI:" : "You:"}</b> {msg.content}
                 </div>
               ))}
@@ -253,11 +263,13 @@ export default function InterviewPage() {
           </Card>
         </div>
       </div>
-      {/* FOOTER */}
       <div className="p-3 border-t flex justify-center bg-white">
-        <Button variant="destructive" onClick={() => endInterview(false)}>
+        <button
+          className="px-4 py-2 flex items-center gap-2 bg-red-600 text-white rounded"
+          onClick={() => endInterview(false)}
+        >
           <PhoneOff className="w-4 h-4 mr-2" /> End Interview
-        </Button>
+        </button>
       </div>
     </div>
   );

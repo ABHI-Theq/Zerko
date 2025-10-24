@@ -14,25 +14,12 @@ def interview_agent_auto_number(
     questions_list: list,
     messages: list,
     time_left: int = None,
-    force_next: bool = False   # <-- New feature!
+    force_next: bool = False
 ):
-    """
-    AI Interview Agent with:
-    - Time-awareness
-    - Follow-up questions support
-    - Moves to next question after follow-up
-    - Signals last question / end of interview based on time_left
-    - Optional force to ask ONLY next question in sequence (force_next)
-    """
-
-    # 1. Load the LLM (Gemini)
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.6)
+    LAST_QUESTION_THRESHOLD = 2 * 60 * 1000
+    END_INTERVIEW_THRESHOLD = 30 * 1000
 
-    # 2. Time thresholds (ms)
-    LAST_QUESTION_THRESHOLD = 2 * 60 * 1000   # 2 minutes
-    END_INTERVIEW_THRESHOLD = 30 * 1000       # 30 seconds
-
-    # 3. Track which questions have been asked
     asked_question_ids = [
         int(m.get("question_id", -1))
         for m in messages
@@ -44,21 +31,18 @@ def interview_agent_auto_number(
     )
     next_question = next_question_obj["question"] if next_question_obj else None
 
-    # 4. If first message, greet + ask first question only.
     if not messages:
-        greeting = (
-            f"Welcome to the interview for the position of {Post}! "
-            f"I’ll ask you a few questions based on your profile. Let’s begin!\n\n{questions_list[0]['question']}"
-        )
         return {
-            "AIResponse": greeting,
+            "AIResponse": f"Welcome to the interview for {Post}! Let’s begin!\n\n{questions_list[0]['question']}",
             "endInterview": False,
-            "question_id": questions_list[0].get("id") if "id" in questions_list[0] else 0
+            "question_id": questions_list[0].get("id") if "id" in questions_list[0] else 0,
+            "lastQuestion": False
         }
 
-    # 5. Time check for warning or ending interview
     end_interview = False
     extra_note = ""
+    last_question = False
+
     if time_left is not None:
         if time_left <= END_INTERVIEW_THRESHOLD:
             end_interview = True
@@ -67,9 +51,9 @@ def interview_agent_auto_number(
                 "Thank you for your time and thoughtful answers! We will get back to you soon."
             )
         elif time_left <= LAST_QUESTION_THRESHOLD:
+            last_question = True
             extra_note = "\n\nWe are approaching the end, this will be your final question."
 
-    # 6. Optionally force strict sequential asking
     if force_next and next_question:
         response_text = next_question + extra_note
         response_id = next_question_obj.get("id") if next_question_obj and "id" in next_question_obj else next_question_idx
@@ -108,5 +92,6 @@ Next line (what interviewer should say):
     return {
         "AIResponse": response_text,
         "endInterview": end_interview,
-        "question_id": response_id   # optionally track which question was asked
+        "question_id": response_id,
+        "lastQuestion": last_question
     }

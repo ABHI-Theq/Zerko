@@ -59,7 +59,7 @@ export function AppSidebar() {
         height={40}
         className=""
         />
-        <p className="text-black text-md font-medium">Zerko</p>
+        <p className="text-black text-2xl font-serif">Zerko</p>
       </SidebarHeader>
                        <hr className="bg-gray-800 border-t-1 border-gray-700 "/>
       <SidebarContent className="">

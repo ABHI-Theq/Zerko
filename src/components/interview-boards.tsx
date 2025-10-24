@@ -13,13 +13,14 @@ import {
 } from "@/components/ui/card"
 import { useInterviewConAll } from '@/context/InterviewAllContext';
 import { useRouter } from 'next/navigation';
+import { InterviewDetails } from '@/types';
 
 const InterviewsBoard = () => {
     const router=useRouter();
-    const {interviews,setInterviews}=useInterviewConAll();
+    // const {interviews,setInterviews}=useInterviewConAll();
+    const [interviews,setInterviews]=useState<InterviewDetails[]>()
     const [loading, setLoading] = useState<boolean>(false);
     useEffect(() => {
-        if(interviews.length==0){
         (async () => {
             setLoading(true)
             try {
@@ -46,7 +47,6 @@ const InterviewsBoard = () => {
                 setLoading(false);
             }
         })()
-        }
     }, [])
 
     if (loading) {
@@ -60,9 +60,9 @@ const InterviewsBoard = () => {
 
         <div className='flex  w-full items-center justify-start '>
             {
-  interviews.length > 0 ? (
+  interviews?.length!>0 ? (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full p-4">
-      {interviews.map((interview, index) => (
+      {interviews!.map((interview, index) => (
         <Card
           key={index}
           onClick={() => {
@@ -111,7 +111,7 @@ const InterviewsBoard = () => {
       ))}
     </div>
   ) : (
-    <div className="flex items-center justify-center text-2xl text-orange-600 w-full py-16">
+    <div className="flex items-center justify-center text-2xl text-orange-600 w-full py-16 z-10">
       No Interviews Found
     </div>
   )
