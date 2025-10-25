@@ -17,10 +17,14 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
-      "next-env.d.ts"
+      "next-env.d.ts",
     ],
-          "@typescript-eslint/no-unused-vars":"off",
-          "@typescript-eslint/no-explicit-any":"off"
+
+    // ✅ FIX: Rules must be inside a `rules` object
+    rules: {
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   },
 ];
 
