@@ -4,6 +4,7 @@ langchain_core
 langchain
 langchain_community
 pydantic
-dotenv
+python-dotenv
 langchain_google_genai
 requests
+pymupdf
