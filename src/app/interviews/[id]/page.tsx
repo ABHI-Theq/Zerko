@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 import { Session } from "next-auth";
 import { InterviewQuestion, transcriptTypeMsg } from "@/types";
 
-export default function InterviewDetailsPage() {
+export default function Page() {
   const params = useParams();
   const { interviews } = useInterviewConAll();
   const [interview, setInterview] = useState<any>(null);
@@ -120,7 +120,7 @@ export default function InterviewDetailsPage() {
             <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
               <p className="text-sm text-zinc-400 mb-2">Resume</p>
               <div className="prose prose-invert max-w-none">
-                <p className="whitespace-pre-wrap">{interview.resumeData}</p>
+                <p className="whitespace-pre-wrap">{interview.resume}</p>
               </div>
             </div>
 

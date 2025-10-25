@@ -131,14 +131,41 @@ def get_next_interview_question(req: InterviewRequest):
         logging.exception("Error during interview")
         raise HTTPException(status_code=500, detail=f"Error during interview: {e}")
 
-@app.post("/api/feedback")
-def getFeedBackReport(req: FeedBackReportRequestModel):
-    """
-    POST endpoint that generates a full interview feedback report.
-    """
+# @app.post("/api/feedback")
+# def getFeedBackReport(req: FeedBackReportRequestModel):
+#     """
+#     POST endpoint that generates a full interview feedback report.
+#     """
 
+#     try:
+#         report = feedbackReport_agent(
+#             post=req.post,
+#             jobDescription=req.jobDescription,
+#             resume_data=req.resume_data,
+#             transcript=req.transcript,
+#             question_list=req.question_list,
+#             interview_type=req.interview_type,
+#         )
+
+#         return {
+#             "success": True,
+#             "message": "Feedback report generated successfully",
+#             "feedback_report": report,
+#         }
+
+#     except Exception as e:
+#         logging.error(f"Error generating feedback: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/feedback/{interview_id}")
+def generate_interview_feedback(interview_id: str, req: FeedBackReportRequestModel):
+    """
+    POST endpoint that generates and returns interview feedback.
+    """
     try:
-        report = feedbackReport_agent(
+        logging.info(f"Generating feedback for interview {interview_id}")
+        
+        feedback = feedbackReport_agent(
             post=req.post,
             jobDescription=req.jobDescription,
             resume_data=req.resume_data,
@@ -149,8 +176,8 @@ def getFeedBackReport(req: FeedBackReportRequestModel):
 
         return {
             "success": True,
-            "message": "Feedback report generated successfully",
-            "feedback_report": report,
+            "message": "Feedback generated successfully",
+            "feedback_report": feedback["feedbackReport"],
         }
 
     except Exception as e:

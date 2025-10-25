@@ -9,19 +9,19 @@ import {
   useRef
 } from "react";
 import { useSession } from "next-auth/react";
-import { InterviewDetails } from "../types";
+import { InterviewDetsForAPI } from "../types";
 
 interface InterviewContextType {
-  interviews: InterviewDetails[];
+  interviews: InterviewDetsForAPI[];
   loading: boolean;
   setLoading: Dispatch<SetStateAction<boolean>>;
-  setInterviews: Dispatch<SetStateAction<InterviewDetails[]>>;
+  setInterviews: Dispatch<SetStateAction<InterviewDetsForAPI[]>>;
 }
 
 const InterviewAllContext = createContext<InterviewContextType | null>(null);
 
 export const InterviewAllProvider = ({ children }: { children: React.ReactNode }) => {
-  const [interviews, setInterviews] = useState<InterviewDetails[]>([]);
+  const [interviews, setInterviews] = useState<InterviewDetsForAPI[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const { data: session, status } = useSession();
   const hasFetchedRef = useRef(false);

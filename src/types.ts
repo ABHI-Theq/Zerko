@@ -89,6 +89,20 @@ export type InterviewDetails={
   duration:string | null
 }
 
+export type InterviewDetsForAPI={
+   id: string | null,
+  post: string | null,
+  jobDescription: string | null,   
+  resume :string | null,
+  interviewType: string | null,
+  duration: string | null,
+  questions: QuestionsList | null,
+  transcript: transcriptTypeMsg[] | null,
+  feedback: string | null,
+  feedbackGenerated: boolean | null,
+  createdAt: Date | null
+}
+
 export type transcriptTypeMsg={
   role:string,
   content:string

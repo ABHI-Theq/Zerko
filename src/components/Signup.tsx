@@ -16,6 +16,7 @@ import Link from "next/link";
 import { signIn } from "@/lib/auth";
 import { UserSignup, userSignupSchema } from "@/types";
 import toast from "react-hot-toast";
+import { signInWithGithub, signInWithGoogle } from "@/features/actions";
 
 export default function Signup() {
     const [showPassword, setShowPassword] = useState(false);
@@ -167,11 +168,11 @@ export default function Signup() {
 
                 {/* Social Auth */}
                 <div className="flex space-x-5">
-                    <div onClick={async()=>await signIn("github",{redirectTo:"/"})} className="w-full">
+                    <div onClick={async()=>await signInWithGithub()} className="w-full">
                     <AuthButton
                      icon={<IconBrandGithub className="h-4 w-4" />} label="GitHub" />
                     </div>
-                    <div onClick={async()=>await signIn("google",{redirectTo:"/"})} className="w-full">
+                    <div onClick={async()=>await signInWithGoogle()} className="w-full">
                     <AuthButton icon={<IconBrandGoogle className="h-4 w-4" />} label="Google" />
                     </div>
                 </div>

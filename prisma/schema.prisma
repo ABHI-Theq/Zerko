@@ -65,7 +65,9 @@ model Interview {
   endedAt        DateTime?
 
   transcript     Json?    
-  feedbackreport Json?    
+  feedback         String?   @db.Text
+  feedbackGenerated Boolean  @default(false)
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
