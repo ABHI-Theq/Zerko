@@ -30,6 +30,9 @@ jobs:
 
       - name: Run Lint
         run: pnpm lint
+      
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: Build Next.js app
         run: pnpm run build
