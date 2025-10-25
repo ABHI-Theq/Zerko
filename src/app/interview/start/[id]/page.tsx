@@ -177,7 +177,6 @@ export default function Page() {
         handleAnswer("No answer detected.");
       } else if (event.error === "aborted") {
         // User manually stopped or interview ended
-        endInterview()
       } else {
         handleAnswer("Sorry, could not hear any response.");
       }
