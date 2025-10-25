@@ -31,9 +31,9 @@ const InterviewsBoard = () => {
 
         <div className='flex  w-full items-center justify-start '>
             {
-  interviews?.length!>0 ? (
+  interviews && interviews.length!>0 ? (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full p-4">
-      {interviews!.map((interview, index) => (
+      {interviews.map((interview, index) => (
         <Card
           key={index}
           onClick={() => {
@@ -60,7 +60,7 @@ const InterviewsBoard = () => {
 
           <CardContent className="relative z-10 p-4 mx-5 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
             <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-              { interview!.jobDescription!.length > 200
+              { interview.jobDescription && interview.jobDescription.length > 200
                 ? `${interview!.jobDescription!.substring(0, 200)}...`
                 : interview.jobDescription}
             </p>
