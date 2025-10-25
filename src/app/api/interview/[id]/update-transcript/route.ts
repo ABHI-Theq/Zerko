@@ -3,7 +3,7 @@ import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   const { messages } = await req.json();
@@ -15,7 +15,7 @@ export async function POST(
       });
     }
     if (!messages) {
-      return new Error("Error while setting up transcript of the interview");
+      throw new Error("Error while setting up transcript of the interview");
     }
     const interview = await prisma.interview.update({
       where: {

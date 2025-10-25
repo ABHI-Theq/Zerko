@@ -17,6 +17,7 @@ const InterviewContext = createContext<InterviewContextType | null>(null);
 
 export const InterviewProvider = ({ children }: { children: React.ReactNode }) => {
   const [interview, setInterview] = useState<InterviewDetails>({
+    id: null,
     name: null,
     post: null,
     jobDescription: null,

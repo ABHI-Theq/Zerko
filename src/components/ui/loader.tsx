@@ -1,95 +1,58 @@
 "use client";
-import { motion } from "motion/react";
+
+import { motion, type Transition } from "motion/react";
 import React from "react";
 
+// ✅ Safe easing definitions (Framer Motion v11 compatible)
+const easeInOut: Transition["ease"] = [0.42, 0, 0.58, 1]; // same as 'easeInOut'
+const linear: Transition["ease"] = [0, 0, 1, 1]; // same as 'linear'
+
 export const LoaderOne = () => {
-  const transition = (x: number) => {
-    return {
-      duration: 1,
-      repeat: Infinity,
-      repeatType: "loop" as const,
-      delay: x * 0.2,
-      ease: "easeInOut",
-    };
-  };
+  const transition = (x: number): Transition => ({
+    duration: 1,
+    repeat: Infinity,
+    repeatType: "loop",
+    delay: x * 0.2,
+    ease: easeInOut,
+  });
+
   return (
     <div className="flex items-center gap-2 justify-center">
-      <motion.div
-        initial={{
-          y: 0,
-        }}
-        animate={{
-          y: [0, 10, 0],
-        }}
-        transition={transition(0)}
-        className="h-3 w-3 rounded-full border border-neutral-300 bg-gradient-to-b from-neutral-400 to-neutral-300"
-      />
-      <motion.div
-        initial={{
-          y: 0,
-        }}
-        animate={{
-          y: [0, 10, 0],
-        }}
-        transition={transition(1)}
-        className="h-3 w-3 rounded-full border border-neutral-300 bg-gradient-to-b from-neutral-400 to-neutral-300"
-      />
-      <motion.div
-        initial={{
-          y: 0,
-        }}
-        animate={{
-          y: [0, 10, 0],
-        }}
-        transition={transition(2)}
-        className="h-3 w-3   rounded-full border border-neutral-300 bg-gradient-to-b from-neutral-400 to-neutral-300"
-      />
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          initial={{ y: 0 }}
+          animate={{ y: [0, 10, 0] }}
+          transition={transition(i)}
+          className="h-3 w-3 rounded-full border border-neutral-300 bg-gradient-to-b from-neutral-400 to-neutral-300"
+        />
+      ))}
     </div>
   );
 };
 
 export const LoaderTwo = () => {
-  const transition = (x: number) => {
-    return {
-      duration: 2,
-      repeat: Infinity,
-      repeatType: "loop" as const,
-      delay: x * 0.2,
-      ease: "easeInOut",
-    };
-  };
+  const transition = (x: number): Transition => ({
+    duration: 2,
+    repeat: Infinity,
+    repeatType: "loop",
+    delay: x * 0.2,
+    ease: easeInOut,
+  });
+
   return (
     <div className="flex items-center">
-      <motion.div
-        transition={transition(0)}
-        initial={{
-          x: 0,
-        }}
-        animate={{
-          x: [0, 20, 0],
-        }}
-        className="h-4 w-4 rounded-full bg-neutral-200 shadow-md dark:bg-neutral-500"
-      />
-      <motion.div
-        initial={{
-          x: 0,
-        }}
-        animate={{
-          x: [0, 20, 0],
-        }}
-        transition={transition(0.4)}
-        className="h-4 w-4 -translate-x-2 rounded-full bg-neutral-200 shadow-md dark:bg-neutral-500"
-      />
-      <motion.div
-        initial={{
-          x: 0,
-        }}
-        animate={{
-          x: [0, 20, 0],
-        }}
-        transition={transition(0.8)}
-        className="h-4 w-4 -translate-x-4 rounded-full bg-neutral-200 shadow-md dark:bg-neutral-500"
-      />
+      {[0, 0.4, 0.8].map((delay, i) => (
+        <motion.div
+          key={i}
+          initial={{ x: 0 }}
+          animate={{ x: [0, 20, 0] }}
+          transition={transition(delay)}
+          className={`h-4 w-4 rounded-full bg-neutral-200 shadow-md dark:bg-neutral-500 ${
+            i === 1 ? "-translate-x-2" : i === 2 ? "-translate-x-4" : ""
+          }`}
+        />
+      ))}
     </div>
   );
 };
@@ -114,7 +77,7 @@ export const LoaderThree = () => {
         animate={{ pathLength: 1, fill: "var(--fill-final)" }}
         transition={{
           duration: 2,
-          ease: "easeInOut",
+          ease: easeInOut,
           repeat: Infinity,
           repeatType: "reverse",
         }}
@@ -128,22 +91,20 @@ export const LoaderFour = ({ text = "Loading..." }: { text?: string }) => {
   return (
     <div className="relative font-bold text-black [perspective:1000px] dark:text-white">
       <motion.span
-        animate={{
-          skew: [0, -40, 0],
-          scaleX: [1, 2, 1],
-        }}
+        animate={{ skewX: [0, -40, 0], scaleX: [1, 2, 1] }}
         transition={{
           duration: 0.05,
           repeat: Infinity,
           repeatType: "reverse",
           repeatDelay: 2,
-          ease: "linear",
-          times: [0, 0.2, 0.5, 0.8, 1],
+          ease: linear,
+          times: [0, 0.5, 1],
         }}
         className="relative z-20 inline-block"
       >
         {text}
       </motion.span>
+
       <motion.span
         className="absolute inset-0 text-[#00e571]/50 blur-[0.5px] dark:text-[#00e571]"
         animate={{
@@ -155,12 +116,13 @@ export const LoaderFour = ({ text = "Loading..." }: { text?: string }) => {
           duration: 0.5,
           repeat: Infinity,
           repeatType: "reverse",
-          ease: "linear",
+          ease: linear,
           times: [0, 0.2, 0.5, 0.8, 1],
         }}
       >
         {text}
       </motion.span>
+
       <motion.span
         className="absolute inset-0 text-[#8b00ff]/50 dark:text-[#8b00ff]"
         animate={{
@@ -172,7 +134,7 @@ export const LoaderFour = ({ text = "Loading..." }: { text?: string }) => {
           duration: 0.8,
           repeat: Infinity,
           repeatType: "reverse",
-          ease: "linear",
+          ease: linear,
           times: [0, 0.3, 0.6, 0.8, 1],
         }}
       >
@@ -204,7 +166,7 @@ export const LoaderFive = ({ text }: { text: string }) => {
             repeat: Infinity,
             repeatType: "loop",
             delay: i * 0.05,
-            ease: "easeInOut",
+            ease: easeInOut,
             repeatDelay: 2,
           }}
         >

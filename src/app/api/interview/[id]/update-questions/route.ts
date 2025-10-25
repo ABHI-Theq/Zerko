@@ -1,13 +1,13 @@
 import prisma from "@/lib/prisma";
 import { NextRequest,NextResponse } from "next/server"
 
-export async function POST(req: NextRequest,{params}:{params:{id:string}}){
+export async function POST(req: NextRequest,{params}:{params:Promise<{ id: string }>}){
     const {id}=await params;
     const {questions}=await req.json();
 
     try {
         if(!questions){
-            return new Error("error question list is not there")
+            throw new Error("error question list is not there")
         }
         const interview=await prisma.interview.update({
         where:{
