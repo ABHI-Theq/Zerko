@@ -13,41 +13,12 @@ import {
 } from "@/components/ui/card"
 import { useInterviewConAll } from '@/context/InterviewAllContext';
 import { useRouter } from 'next/navigation';
-import { InterviewDetails } from '@/types';
 
 const InterviewsBoard = () => {
     const router=useRouter();
-    // const {interviews,setInterviews}=useInterviewConAll();
-    const [interviews,setInterviews]=useState<InterviewDetails[]>()
-    const [loading, setLoading] = useState<boolean>(false);
-    useEffect(() => {
-        (async () => {
-            setLoading(true)
-            try {
-                "use server"
-                const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/all`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "content-type": "Application/Json"
-                        }
-                    }
-                )
-                const data = await res.json();
-                if (data.error) {
-                    toast.error(data.error)
-                    return;
-                }
-                setInterviews([...data.interviews])
-            } catch (error) {
-                const errMsg = error instanceof Error ? error.message : "Error while fetching interviews"
-                toast.error(errMsg);
+    const {interviews,setInterviews,loading}=useInterviewConAll();
+    // const [interviews,setInterviews]=useState<InterviewDetails[]>()
 
-            } finally {
-                setLoading(false);
-            }
-        })()
-    }, [])
 
     if (loading) {
         return (

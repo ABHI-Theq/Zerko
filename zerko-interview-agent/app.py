@@ -65,6 +65,7 @@ class InterviewRequest(BaseModel):
     questions: List[Dict]
     messages: List[Dict]
     time_left: Optional[int] = None  # milliseconds remaining
+    force_next: Optional[bool] = False
 
 class ParseResume(BaseModel):
     resumeUrl: Annotated[str, Field(description="URL of the resume to be parsed")]
@@ -122,7 +123,8 @@ def get_next_interview_question(req: InterviewRequest):
             resume_data=req.resumeData,
             questions_list=req.questions,
             messages=req.messages,
-            time_left=req.time_left
+            time_left=req.time_left,
+            force_next=req.force_next
         )
         return {"success": True, "data": result}
     except Exception as e:

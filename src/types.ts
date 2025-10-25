@@ -88,3 +88,8 @@ export type InterviewDetails={
   resumeData:string | null,
   duration:string | null
 }
+
+export type transcriptTypeMsg={
+  role:string,
+  content:string
+}
