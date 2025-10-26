@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  zerko-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    environment:
+      - NEXT_PUBLIC_AGENT_API_URL=${NEXT_PUBLIC_AGENT_API_URL}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GOOGLE_ID=${GOOGLE_ID}
+      - GOOGLE_SECRET=${GOOGLE_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+
+    depends_on:
+      - interview-agent
+    networks:
+      - zerko-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f $NEXT_PUBLIC_AGENT_API_URL/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  interview-agent:
+    build:
+      context: ./zerko-interview-agent
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./zerko-interview-agent/.env
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    networks:
+      - zerko-net
+
+networks:
+  zerko-net:
+    name: zerko-network

@@ -1,0 +1,6 @@
+zerko-interiew-agent
+.next
+node_modules
+.github
+.env
+.gitignore

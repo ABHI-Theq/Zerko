@@ -1,10 +1,10 @@
 fastapi
 uvicorn
-langchain_core
 langchain
-langchain_community
+langchain-core
+langchain-community
+langchain-google-genai
 pydantic
 python-dotenv
-langchain_google_genai
 requests
 pymupdf

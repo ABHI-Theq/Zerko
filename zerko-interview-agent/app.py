@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI(title="AI Interview Agent API")
 
 # CORS
-origins = ["http://localhost:3000", "http://localhost:8080", "*"]
+origins = [os.getenv('CORS_ORIGIN'), "http://localhost:8080", "*"]
 frontend_origin = os.getenv("NEXT_PUBLIC_URL")
 if frontend_origin:
     origins.append(frontend_origin)
