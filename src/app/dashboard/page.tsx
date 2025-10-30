@@ -14,7 +14,7 @@ const Dashboard = () => {
   if (session?.user && setInterview) {
     setInterview(prev => ({ ...prev, name: session.user!.name! }));
   }
-}, [session?.user?.name, setInterview]);
+}, [session?.user?.name, setInterview,session?.user]);
   return (
         <div className='relative flex items-start justify-center flex-col gap-4 p-2 w-full'>
       <div className="flex items-start bg-white shadow-lg justify-center p-4 gap-2 flex-col  rounded-lg w-full ">

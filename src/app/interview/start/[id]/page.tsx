@@ -109,7 +109,7 @@
         initInterview();
       }
       return cleanup;
-    }, []); // Dependency array intentionally []
+    },); // Dependency array intentionally []
 
     useEffect(() => {
       if (interviewEnded) return;
@@ -379,7 +379,7 @@
         await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${id}/save-feedback`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ feedback: feedbackData.feedback_report }),
+          body: JSON.stringify({ feedback: feedbackData.feedback }),
         });
 
         toast.success('Interview completed successfully!', { id: toastId });

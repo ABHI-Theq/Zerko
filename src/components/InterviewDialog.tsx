@@ -122,7 +122,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
       
       
     }
-  }, [resumeUrl, post, interviewType, jobDescription, setInterview]);
+  }, [resumeUrl, post, interviewType, jobDescription, setInterview,duration]);
 
   return (
     <>

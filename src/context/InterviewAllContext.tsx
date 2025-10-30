@@ -51,7 +51,7 @@ export const InterviewAllProvider = ({ children }: { children: React.ReactNode }
     };
 
     fetchInterviews();
-  }, [status, session?.user?.email]); // Only depend on email to prevent unnecessary re-renders
+  }, [status, session?.user?.email,session]); // Only depend on email to prevent unnecessary re-renders
 
   return (
     <InterviewAllContext.Provider value={{ interviews, setInterviews, loading, setLoading }}>

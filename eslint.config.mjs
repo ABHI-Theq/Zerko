@@ -17,13 +17,18 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
-      "next-env.d.ts",
     ],
-
-    // ✅ FIX: Rules must be inside a `rules` object
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      // do NOT disable triple-slash-reference globally here
+    },
+  },
+  {
+    // Override for next-env.d.ts only
+    files: ["next-env.d.ts"],
+    rules: {
+      "@typescript-eslint/triple-slash-reference": "off",
     },
   },
 ];

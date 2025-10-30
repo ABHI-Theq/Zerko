@@ -123,7 +123,7 @@ Analyze both the **Job Description** and the **Candidate's Resume** carefully.
 if __name__ == "__main__":
     print("Generating interview questions... please wait...\n")
 
-    resume_text = parse_resume(
+    resume_text = parse_Resume(
         "https://res.cloudinary.com/divvzs1rt/image/upload/v1760377410/resumes/file_ttbg0x.pdf"
     )
 
