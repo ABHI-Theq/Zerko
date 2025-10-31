@@ -76,7 +76,7 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
 
   useEffect(() => {
     if (open) generateAndSaveQuestions();
-  }, [open,generateAndSaveQuestions]);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

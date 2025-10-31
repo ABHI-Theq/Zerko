@@ -140,6 +140,12 @@ export default function Page() {
                 </div>
               </div>
             )}
+
+            {interview.feedback && (
+              <div>
+                
+              </div>
+            )}
           </div>
         </div>
       </main>

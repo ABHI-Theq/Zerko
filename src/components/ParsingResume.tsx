@@ -45,7 +45,7 @@ const ParsingResume: React.FC<ParsingResumeProps> = ({ open, onClose, resumeUrl,
 
   useEffect(() => {
     if (open) getResumeData();
-  }, [open,getResumeData]);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
