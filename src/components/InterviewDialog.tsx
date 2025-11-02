@@ -23,6 +23,7 @@ import { InterviewCreationSchema, InterviewType } from "@/types";
 import { useInterviewCon } from "@/context/InterviewContext";
 import ParsingResume from "./ParsingResume";
 import QuestionGeneration from "./QuestionGeneration";
+import { jobPosts } from "@/data/posts";
 
 interface InterviewDialogProps {
   open?: boolean;
@@ -33,7 +34,6 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [post, setPost] = useState<string | null>(null);
-  const [postError, setPostError] = useState("");
   const [jobDescription, setJobDescription] = useState<string | null>(null);
   const [resume, setResume] = useState<File | null>(null);
   const [resumeError, setResumeError] = useState("");
@@ -142,26 +142,20 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
           {/* Step 1: Job Details + Resume */}
           {step === 1 && (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="job-post">Post</Label>
-                <Input
-                  id="post"
-                  name="post"
-                  type="text"
-                  value={post ?? ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (/[^a-zA-Z\s]/.test(value)) {
-                      setPostError("Post must contain only letters and spaces");
-                    } else {
-                      setPostError("");
-                    }
-                    setPost(value);
-                  }}
-                />
-                {postError && (
-                  <p className="text-red-500 text-xs mt-1">{postError}</p>
-                )}
+              <div className="">
+                <Label htmlFor="post">Post</Label>
+                <Select value={post ?? ""} onValueChange={setPost} >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select position" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                     {jobPosts.map((job) => (
+    <SelectItem key={job.value} value={job.value}>
+      {job.label}
+    </SelectItem>
+  ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -209,7 +203,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                 </Button>
                 <Button
                   onClick={() => setStep(2)}
-                  disabled={!jobDescription || !resume || !!postError || !post}
+                  disabled={!jobDescription || !resume || !post}
                 >
                   Next
                 </Button>
@@ -228,7 +222,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                       <SelectValue placeholder="Select duration" />
                     </SelectTrigger>
                     <SelectContent>
-                                            <SelectItem value="5">5 Minutes</SelectItem>
+                      <SelectItem value="5">5 Minutes</SelectItem>
                       <SelectItem value="15">15 Minutes</SelectItem>
                       <SelectItem value="30">30 Minutes</SelectItem>
                       <SelectItem value="60">1 Hour</SelectItem>

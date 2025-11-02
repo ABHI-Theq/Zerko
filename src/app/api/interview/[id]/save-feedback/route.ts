@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export async function POST(
   request: Request,
@@ -7,10 +8,14 @@ export async function POST(
 ) {
   try {
     const { feedback } = await request.json();
+    const session=await auth();
     const {id} =await params;
 
     const updatedInterview = await prisma.interview.update({
-      where: { id },
+      where: { 
+        id:id,
+        userId:session?.user?.id
+       },
       data: {
         feedback,
         feedbackGenerated: true,

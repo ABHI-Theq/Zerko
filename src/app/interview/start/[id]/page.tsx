@@ -25,6 +25,7 @@
       const [isListening,setIsListening]=useState(false);
       const [apiError, setApiError] = useState<string | null>(null);
       const [agentThinking, setAgentThinking] = useState(false);
+      const [endInterviewed, setEndInterviewed] = useState(false);
 
       const recognitionRef = useRef<any>(null);
       const silenceTimerRef = useRef<any>(null);
