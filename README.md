@@ -48,26 +48,25 @@ cp .env.example .env.local
 
 ### Development
 ```bash
-npm run dev
+pnpm run dev
 ```
 Visit http://localhost:3000
 
 ### Production Build
 ```bash
-npm run build
-npm start
+pnpm run build
+pnpm start
 ```
 
 ### Testing
 ```bash
-npm run test
-npm run test:coverage
+pnpm run test
+pnpm run test:coverage
 ```
 
 ### Linting
 ```bash
-npm run lint
-npm run format
+pnpm run lint
 ```
 
 ## 📁 Project Structure
