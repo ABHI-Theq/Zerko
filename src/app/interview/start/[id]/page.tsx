@@ -4,7 +4,6 @@
     import { Card, CardContent } from "@/components/ui/card";
     import { Bot, User, PhoneOff, Mic, Clock } from "lucide-react";
     import { Spinner } from "@/components/ui/spinner";
-    import InterviewHeader from "@/components/InterviewHeader";
     import { useInterviewCon } from "@/context/InterviewContext";
     import { useParams, useRouter } from "next/navigation";
     import { motion, AnimatePresence } from "motion/react";
