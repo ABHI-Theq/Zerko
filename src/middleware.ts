@@ -1,61 +1,59 @@
-import { auth } from "@/lib/auth";
 import { NextResponse, NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default auth(async function middleware(req) {
-  // ✅ Cast to NextRequest so url exists
-  const request = req as unknown as NextRequest;
+import {
+  apiAuthPrefix,
+  authRoutes,
+  DEFAULT_LOGIN_REDIRECT,
+  publicRoutes,
+} from "@/route_util";
 
-  const res = NextResponse.next();
+export default async function middleware(req: NextRequest) {
+  const { nextUrl } = req;
 
-  // ✅ Security headers
-  res.headers.set("X-Frame-Options", "DENY");
-  res.headers.set("X-Content-Type-Options", "nosniff");
-  res.headers.set("Referrer-Policy", "origin-when-cross-origin");
-  res.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-eval' 'unsafe-inline'"
-  );
+  // 🔐 Get session token (edge-safe, does NOT use Prisma)
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+  });
 
-  // ✅ Use NextRequest.url
-  const url = new URL(request.url);
-  const pathname = url.pathname;
+  const isLoggedIn = !!token;
 
-  const isLoggedIn = !!req.auth;
+  const pathname = nextUrl.pathname;
 
-  const publicRoutes = [
-    '/',
-    '/web-features',
-    '/pricing',
-    '/about',
-    '/auth/sign-in',
-    '/auth/sign-up',
-  ];
+  const isApiAuthRoute = pathname.startsWith(apiAuthPrefix);
+  const isPublicRoute = publicRoutes.includes(pathname);
+  const isAuthRoute = authRoutes.includes(pathname);
 
-  const isPublicRoute = publicRoutes.some(
-    route => pathname === route || pathname.startsWith(route + '/')
-  );
-
-  const isAuthApiRoute = pathname.startsWith('/api/auth');
-
-  if (isPublicRoute || isAuthApiRoute || pathname.startsWith('/_next')) {
-    return res;
+  // Allow NextAuth API routes (signin, callback, etc)
+  if (isApiAuthRoute) {
+    return NextResponse.next();
   }
 
-  if (!isLoggedIn) {
-    const signInUrl = new URL('/auth/sign-in', request.url);
-    signInUrl.searchParams.set(
-      'callbackUrl',
-      encodeURIComponent(url.pathname + url.search)
-    );
+  // If visiting auth pages (sign-in, sign-up)
+  if (isAuthRoute) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(
+        new URL(DEFAULT_LOGIN_REDIRECT, nextUrl)
+      );
+    }
+    return NextResponse.next();
+  }
+
+  // 🔒 Protected routes
+  if (!isPublicRoute && !isLoggedIn) {
+    const signInUrl = new URL("/auth/sign-in", nextUrl);
+    signInUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(signInUrl);
   }
 
-  return res;
-});
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-    "/api/:path*",
+    "/((?!.+\\.[\\w]+$|_next).*)",
+    "/",
+    "/(api|trpc)(.*)",
   ],
 };

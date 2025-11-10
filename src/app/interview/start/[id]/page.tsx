@@ -52,6 +52,7 @@
 
       // --- TTS + Next Listening ---
       const speak = (text: string) => {
+        if(interviewEnded) return;
         const utter = new window.SpeechSynthesisUtterance(text);
         utter.lang = "en-US";
         utter.rate = 1.05;
@@ -62,6 +63,7 @@
       };
 
       // --------- Initialization (Only On Truly Empty) ---------
+      
       useEffect(() => {
         const initInterview = async () => {
           setAgentThinking(true);
@@ -279,6 +281,7 @@
       const handleAnswer = async (userText: string) => {
         setAgentThinking(true);
         setMessages(prevMsgs => [...prevMsgs, { role: "candidate", content: userText }]);
+
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/interview/next`, {
             method: "POST",
@@ -375,11 +378,14 @@
           if (!feedbackRes.ok) throw new Error('Failed to generate feedback');
           const feedbackData = await feedbackRes.json();
 
+          console.log(feedbackData);
+          
+
           // Save feedback to database
           await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${id}/save-feedback`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ feedback: feedbackData.feedback }),
+            body: JSON.stringify({ feedback: `${feedbackData.feedback}` }),
           });
 
           toast.success('Interview completed successfully!', { id: toastId });

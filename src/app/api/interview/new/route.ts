@@ -6,9 +6,9 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
 
-interface CloudinaryResponse{
-    public_id: string;
-    [key:string]:any
+interface CloudinaryResponse {
+  public_id: string;
+  [key: string]: any;
 }
 
 export async function POST(req: Request) {
@@ -72,31 +72,28 @@ export async function POST(req: Request) {
       const bytes = await resume.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const uploadRes = await new Promise<CloudinaryResponse>((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
-            {
-              resource_type:"auto",
-              folder: "resumes",
-              use_filename: true
-            }, 
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result as CloudinaryResponse);
-            }
-          )
-          .end(buffer);
-      });
+      const uploadRes = await new Promise<CloudinaryResponse>(
+        (resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream(
+              {
+                resource_type: "auto",
+                folder: "resumes",
+                use_filename: true,
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result as CloudinaryResponse);
+              }
+            )
+            .end(buffer);
+        }
+      );
 
-    
       resumeUrl = uploadRes.secure_url;
       console.log(resumeUrl);
 
-      resumeUrl=resumeUrl?.replace(
-        "/upload/",
-        "/upload/f_jpg/"
-      ) as string
-      
+      resumeUrl = resumeUrl?.replace("/upload/", "/upload/f_jpg/") as string;
     }
 
     // 🟢 Create interview in DB
@@ -118,7 +115,9 @@ export async function POST(req: Request) {
         post: post,
         jobDescription: jobDescription,
         interviewType: interviewType as InterviewType,
-        startedAt: new Date(),
+        startedAt:  new Date(new Date().toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+        })),
         resume: resumeUrl,
         duration: Number(duration),
       },

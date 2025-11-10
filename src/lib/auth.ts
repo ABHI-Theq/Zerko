@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import { authConfig } from "./auth.config";
 
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async signIn({ user, profile, account, credentials }) {
@@ -108,5 +109,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
-  ...authConfig,
+  ...authConfig
 });
