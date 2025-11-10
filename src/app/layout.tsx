@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { SessionProvider } from "next-auth/react";
-
 import "./globals.css";
 import { InterviewProvider } from "@/context/InterviewContext";
 import { Suspense } from "react";
 import { InterviewAllProvider } from "@/context/InterviewAllContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,9 +18,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Zerko",
-  description: "A platform designed to help student to prepare for interviews",
+export const metadata = {
+  title: {
+    template: "%s | Zerko",
+    default: "Zerko - Modern Web Application",
+  },
+  description: "A modern web application built with Next.js",
+  metadataBase: new URL("https://your-domain.com"),
 };
 
 export default function RootLayout({
@@ -29,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={geistSans.className}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
@@ -46,16 +50,17 @@ export default function RootLayout({
       `,
               }}
             />
-                <SessionProvider>
-            <InterviewAllProvider>
-              <InterviewProvider>
-                  {children}
+            <SessionProvider>
+              <InterviewAllProvider>
+                <InterviewProvider>
+                  <ErrorBoundary>{children}</ErrorBoundary>
                   <Toaster position="bottom-right" />
-              </InterviewProvider>
-            </InterviewAllProvider>
+                </InterviewProvider>
+              </InterviewAllProvider>
             </SessionProvider>
           </div>
         </Suspense>
+        <Analytics />
       </body>
     </html>
   );

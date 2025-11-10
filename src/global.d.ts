@@ -4,3 +4,4 @@ declare global {
     SpeechRecognition: any;
   }
 }
+declare module "*.css"

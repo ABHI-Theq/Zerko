@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zerko - Modern Web Application
 
-## Getting Started
+## Overview
+Zerko is a modern web application built with Next.js, featuring a sleek user interface and optimized performance. This project demonstrates best practices in React development and modern web architecture.
 
-First, run the development server:
+## 🚀 Features
+- Next.js 14 with App Router
+- TypeScript Integration
+- Responsive Design
+- SEO Optimized
+- Performance Optimized
+- Modern UI/UX
 
+## 🛠️ Tech Stack
+- Next.js 14
+- TypeScript
+- TailwindCSS
+- ESLint & Prettier
+- Husky for Git Hooks
+- Jest for Testing
+
+## 📋 Prerequisites
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Node.js >= 18.x
+npm >= 9.x
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository
+```bash
+git clone https://github.com/ABHI-Theq/zerko.git
+cd zerko
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies
+```bash
+pnpm install
+```
 
-## Learn More
+3. Set up environment variables
+```bash
+cp .env.example .env.local
+# Configure your environment variables
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Development
+```bash
+pnpm run dev
+```
+Visit http://localhost:3000
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Production Build
+```bash
+pnpm run build
+pnpm start
+```
 
-## Deploy on Vercel
+### Testing
+```bash
+pnpm run test
+pnpm run test:coverage
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Linting
+```bash
+pnpm run lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📁 Project Structure
+```
+zerko/
+├── app/                # Next.js app directory
+├── components/         # Reusable components
+├── lib/               # Utility functions
+├── public/            # Static assets
+├── styles/            # Global styles
+├── types/             # TypeScript types
+└── tests/             # Test files
+```
+
+## 🔍 Key Features Implementation
+- **Performance**: Implements image optimization, code splitting, and lazy loading
+- **SEO**: Meta tags, dynamic sitemap, and robots.txt
+- **Accessibility**: WCAG 2.1 compliant
+- **Security**: Implementation of security headers and best practices
+
+## 🤝 Contributing
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Support
+For support, email your-email@example.com or join our Discord channel.
+
+## 🌟 Acknowledgments
+- Next.js team for the amazing framework
+- Vercel for hosting solutions
+- All contributors to this project
