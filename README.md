@@ -98,7 +98,7 @@ zerko/
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👥 Support
-For support, email your-email@example.com or join our Discord channel.
+For support, email abhi03085e@gmail.com.
 
 ## 🌟 Acknowledgments
 - Next.js team for the amazing framework
