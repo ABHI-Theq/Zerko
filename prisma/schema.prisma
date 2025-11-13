@@ -7,34 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum InterviewType {
-  TECHNICAL
-  BEHAVIORAL
-  SYSTEM_DESIGN
-  HR
-}
-
-enum InterviewStatus {
-    STARTED
-    RUNNING
-    ENDED
-}
-
 model User {
-  id       String       @id @default(uuid())  @db.Uuid()
-  email    String    @unique
-  name     String
-  image    String? 
-  password String?
+  id             String      @id @default(uuid()) @db.Uuid
+  email          String      @unique
+  name           String
+  image          String?
+  password       String?
   last_signed_at DateTime?
-  accounts Account[]
-  interviews Interview[]
+  accounts       Account[]
+  interviews     Interview[]
 }
 
 model Account {
-  id                String     @id @default(uuid()) @db.Uuid()
-  userId            String    @db.Uuid()
-  user              User    @relation(fields: [userId], references: [id])
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
   provider          String
   providerAccountId String
   type              String
@@ -45,29 +31,43 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
+  user              User    @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
 }
+
 model Interview {
-  id             String   @id @default(uuid()) @db.Uuid()
-  userId         String   @db.Uuid()
-  user           User     @relation(fields: [userId], references: [id])
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @db.Uuid
+  post              String
+  jobDescription    String
+  resume            String?
+  interviewType     InterviewType   @default(TECHNICAL)
+  duration          Int
+  questions         Json?
+  status            InterviewStatus @default(STARTED)
+  startedAt         DateTime?
+  endedAt           DateTime?
+  transcript        Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  feedbackGenerated Boolean         @default(false)
+  feedbackStr       String?
+  improvements      String[]
+  overall_rating    Int?
+  strengths         String[]
+  user              User            @relation(fields: [userId], references: [id])
+}
 
-  post           String   
-  jobDescription String   // full JD text or summary
-  resume         String?  // parsed resume text OR link to uploaded file
-  interviewType  InterviewType @default(TECHNICAL)
-  duration       Int      // in minutes
-  questions      Json?    // store generated questions list
+enum InterviewType {
+  TECHNICAL
+  BEHAVIORAL
+  SYSTEM_DESIGN
+  HR
+}
 
-  status         InterviewStatus   @default(STARTED) // scheduled | active | ended | completed
-  startedAt      DateTime?
-  endedAt        DateTime?
-
-  transcript     Json?    
-  feedback         String?   @db.Text
-  feedbackGenerated Boolean  @default(false)
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+enum InterviewStatus {
+  STARTED
+  RUNNING
+  ENDED
 }

@@ -14,8 +14,8 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Clock, FileText, ArrowRight, Briefcase } from 'lucide-react';
 
 const InterviewsBoard = () => {
-    const router=useRouter();
-    const {interviews,loading}=useInterviewConAll();
+    const router = useRouter();
+    const { interviews, loading } = useInterviewConAll();
 
     if (loading) {
         return (
@@ -45,36 +45,43 @@ const InterviewsBoard = () => {
     return (
         <div className='flex w-full items-center justify-start'>
             {interviews && interviews.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
                     {interviews.map((interview, index) => (
                         <Card
                             key={index}
                             className="group relative overflow-hidden bg-white border border-gray-200/80
-                                     rounded-xl shadow-sm hover:shadow-xl cursor-pointer transition-all duration-300
+                                     rounded-xl shadow-sm hover:shadow-xl transition-all duration-300
                                      hover:scale-[1.02] hover:border-gray-300"
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                            <CardHeader className="relative z-10 pb-3 pt-5">
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                    <div className="flex items-center gap-2">
+                            <CardHeader className="relative">
+                                <div className="flex flex-col gap-1">
+
+                                    <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                                             <Briefcase className="w-5 h-5 text-gray-700" />
                                         </div>
+
+                                        <CardTitle className="text-base font-bold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors">
+                                            {interview.post}
+                                        </CardTitle>
                                     </div>
-                                    <CardAction className={`text-xs font-semibold px-2.5 py-1 rounded-md border ${getInterviewTypeColor(interview.interviewType || '')}`}>
+
+                                    <CardAction
+                                        className={`text-xs font-semibold px-2.5 py-1 rounded-md border mt-1 w-fit ${getInterviewTypeColor(interview.interviewType || '')}`}
+                                    >
                                         {interview.interviewType}
                                     </CardAction>
+
                                 </div>
-                                <CardTitle className="text-base font-bold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors">
-                                    {interview.post}
-                                </CardTitle>
                             </CardHeader>
 
-                            <CardContent className="relative z-10 pb-3">
+
+                            <CardContent className="relative z-10">
                                 <div className="space-y-2.5">
                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                        <FileText className="w-3.5 h-3.5 text-gray-400" />
+                                        <FileText className="w-10 h-10 text-gray-400" />
                                         <p className="line-clamp-2 leading-relaxed">
                                             {interview.jobDescription && interview.jobDescription.length > 100
                                                 ? `${interview.jobDescription.substring(0, 100)}...`
@@ -95,18 +102,20 @@ const InterviewsBoard = () => {
                                 </div>
                             </CardContent>
 
-                            <CardFooter className="relative z-10 pt-3 border-t border-gray-100">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push(`/interviews/${interview.id}`);
-                                    }}
-                                    className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 group/btn transition-colors"
-                                >
-                                    <span>View Details</span>
-                                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                                </button>
-                            </CardFooter>
+                            <CardFooter className="relative z-10 border-t border-gray-100 bg-gray-50/80 rounded-b-xl">
+    <button
+        onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/interviews/${interview.id}`);
+        }}
+        className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 
+                   hover:text-gray-900 transition-all group cursor-pointer"
+    >
+        <span>View Details</span>
+        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+    </button>
+</CardFooter>
+
                         </Card>
                     ))}
                 </div>

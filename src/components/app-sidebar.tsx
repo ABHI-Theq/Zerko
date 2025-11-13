@@ -39,11 +39,11 @@ export function AppSidebar() {
   };
 
   return (
-    <div className="h-full bg-white border-r border-gray-200">
+    <div className="h-full bg-[#efefef] border-r border-gray-200">
       <Sidebar className="bg-white">
-        <SidebarHeader className="flex flex-row items-center justify-start gap-3 px-6 py-5 border-b border-gray-100">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm">
-            <Image src="/logo.png" alt="Logo" width={30} height={30} className="" />
+        <SidebarHeader className="flex flex-row items-center justify-start gap-3 px-6 py-5 border-b border-gray-600">
+          <div className="w-12 h-12 flex items-center justify-center">
+            <Image src="/logo.png" alt="Logo" width={30} height={30} className="invert" />
           </div>
           <div className="flex flex-col">
             <p className="text-gray-900 text-xl font-bold tracking-tight">Zerko</p>
@@ -91,7 +91,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <div className="mt-6 mx-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+          <div className="mt-6 mx-3 p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
                 <span className="text-lg">💡</span>
@@ -106,7 +106,7 @@ export function AppSidebar() {
           </div>
         </SidebarContent>
 
-        <SidebarFooter className="border-t border-gray-100 p-3">
+        <SidebarFooter className="border-t border-gray-600 p-3">
           <div className="rounded-lg hover:bg-gray-50 transition-colors">
             <Userbutton session={session as Session} showDetails={true} />
           </div>

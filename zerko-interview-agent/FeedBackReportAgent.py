@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 class MessageModel(BaseModel):
     role: str
     content: str
+    question_id: Optional[int] = None
 
 
 class FeedBackOutput(BaseModel):

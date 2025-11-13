@@ -45,7 +45,9 @@ export default function RootLayout({
             <SessionProvider>
               <InterviewAllProvider>
                 <InterviewProvider>
+                  <main className="z-10">
                   {children}
+                  </main>
                   <Toaster position="bottom-right" />
                 </InterviewProvider>
               </InterviewAllProvider>

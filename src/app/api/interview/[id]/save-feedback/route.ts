@@ -19,7 +19,10 @@ export async function POST(
         userId:session?.user?.id
        },
       data: {
-        feedback,
+        feedbackStr:feedback.feedbackStr,
+        overall_rating:feedback.overall_rating,
+        strengths:feedback.strengths,
+        improvements:feedback.improvements,
         feedbackGenerated: true,
       },
     });

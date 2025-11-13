@@ -385,7 +385,7 @@
           await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${id}/save-feedback`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ feedback: `${feedbackData.feedback}` }),
+            body: JSON.stringify({ feedback: feedbackData.feedback}),
           });
 
           toast.success('Interview completed successfully!', { id: toastId });
