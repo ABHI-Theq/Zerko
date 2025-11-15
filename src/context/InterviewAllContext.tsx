@@ -33,7 +33,7 @@ export const InterviewAllProvider = ({ children }: { children: React.ReactNode }
     const fetchInterviews = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/all`);
+        const res = await fetch(`/api/interview/all`);
         const data = await res.json();
 
         if (data?.error) {

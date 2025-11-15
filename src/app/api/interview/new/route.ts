@@ -115,9 +115,7 @@ export async function POST(req: Request) {
         post: post,
         jobDescription: jobDescription,
         interviewType: interviewType as InterviewType,
-        startedAt:  new Date(new Date().toLocaleString("en-IN", {
-          timeZone: "Asia/Kolkata",
-        })),
+        startedAt: new Date(Date.now()+5.5*60*60*1000),
         resume: resumeUrl,
         duration: Number(duration),
       },

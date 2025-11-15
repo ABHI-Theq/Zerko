@@ -72,7 +72,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
     formData.append("duration", duration);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/new`, {
+      const res = await fetch(`/api/interview/new`, {
         method: "POST",
         body: formData,
       });

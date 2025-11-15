@@ -57,7 +57,7 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
       toast.success("Questions generated successfully!");
 
       // Save to DB
-      await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/${interviewId}/update-questions`, {
+      await fetch(`/api/interview/${interviewId}/update-questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questions }),

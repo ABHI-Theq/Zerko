@@ -19,7 +19,7 @@ export async function POST(
         userId:session?.user?.id
        },
       data: {
-        feedbackStr:feedback.feedbackStr,
+        feedbackStr:feedback.feedBackStr,
         overall_rating:feedback.overall_rating,
         strengths:feedback.strengths,
         improvements:feedback.improvements,

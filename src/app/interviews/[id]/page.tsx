@@ -10,6 +10,7 @@ import { Session } from "next-auth";
 import { InterviewQuestion, transcriptTypeMsg } from "@/types";
 import Link from "next/link";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import convertMarkdown from "@/lib/convert_markdown";
 
 export default function Page() {
   const params = useParams();
@@ -113,7 +114,7 @@ export default function Page() {
                   </div>
                   <p className="text-xs uppercase tracking-wider text-neutral-400 font-medium">Duration</p>
                 </div>
-                <p className="text-2xl font-semibold text-white">{interview.duration}</p>
+                <p className="text-2xl font-semibold text-white">{interview.duration} min</p>
               </div>
             </div>
           <div>
@@ -152,9 +153,10 @@ export default function Page() {
                 Job Description
               </AccordionTrigger>
               <AccordionContent className="text-white p-2">
-                <div className="bg-neutral-200 p-2 rounded-lg text-black">
-                {interview.jobDescription}
-                </div>
+                <div className="bg-neutral-200 p-2 rounded-lg text-black"
+                dangerouslySetInnerHTML={{__html: convertMarkdown(interview.jobDescription)}}
+                />
+                
               </AccordionContent>
               </AccordionItem>
                             <AccordionItem value="item-2" className="">
@@ -209,15 +211,16 @@ export default function Page() {
                 Feedback
               </AccordionTrigger>
               <AccordionContent className="text-white p-2">
-                <div className="bg-neutral-200 p-2 rounded-lg text-black">
-                {interview.feedbackStr}</div></AccordionContent>
+                <div className="bg-neutral-200 overflow-y-auto p-2 w-full max-h-110 rounded-lg text-black"
+                dangerouslySetInnerHTML={{ __html: convertMarkdown(interview.feedbackStr) }}
+                /></AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-5" className="">
               <AccordionTrigger className="text-neutral-300 text-lg p-0">
                 Improvement Suggestions
               </AccordionTrigger>
               <AccordionContent className="text-white p-2">
-                <div className="bg-neutral-800 p-2 rounded-lg">
+                <div className="bg-neutral-800 p-2 overflow-y-auto max-h-100 rounded-lg">
                 {interview.improvements &&  (
                   <div className="flex flex-col gap-4">
                   {interview.improvements.map((improve: string, idx: number) => (
@@ -236,7 +239,7 @@ export default function Page() {
                 Strengths
               </AccordionTrigger>
               <AccordionContent className="text-white p-2">
-                <div className="bg-neutral-800 p-2 rounded-lg">
+                <div className="bg-neutral-800 p-2 overflow-y-auto max-h-100 rounded-lg">
                 {interview.strengths &&  (
                   <div className="flex flex-col gap-4">
                   {interview.strengths.map((strength: string, idx: number) => (
@@ -251,96 +254,6 @@ export default function Page() {
                    </AccordionContent>
               </AccordionItem>
             </Accordion>
-            {/* <div className="bg-black p-8 rounded-2xl border border-neutral-800/50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-neutral-800/50 rounded-lg">
-                  <FileText className="w-4 h-4 text-neutral-400" />
-                </div>
-                <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium">Job Description</h2>
-              </div>
-              <div className="prose prose-invert max-w-none">
-                <p className="whitespace-pre-wrap text-neutral-300 leading-relaxed">
-                  {interview.jobDescription}
-                </p>
-              </div>
-            </div>
-            {interview.transcript && (
-              <div className="bg-black p-8 rounded-2xl border border-neutral-800/50">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-neutral-800/50 rounded-lg">
-                    <MessageSquare className="w-4 h-4 text-neutral-400" />
-                  </div>
-                  <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium">Interview Transcript</h2>
-                </div>
-                <div className="space-y-6">
-                  {interview.transcript.map((msg: transcriptTypeMsg, idx: number) => (
-                    <div 
-                      key={idx} 
-                      className={`flex gap-4 p-4 rounded-xl ${
-                        msg.role === "interviewer" 
-                          ? "bg-neutral-800/30" 
-                          : "bg-neutral-800/50"
-                      }`}
-                    >
-                      <div className="flex-shrink-0">
-                        <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
-                          msg.role === "interviewer"
-                            ? "bg-neutral-700 text-neutral-300"
-                            : "bg-white text-neutral-900"
-                        }`}>
-                          {msg.role === "interviewer" ? "AI" : "You"}
-                        </span>
-                      </div>
-                      <p className="flex-1 text-neutral-300 leading-relaxed pt-1">
-                        {msg.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {interview.feedbackStr && (
-              <div className="bg-black p-8 rounded-2xl border border-neutral-800/50">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-neutral-800/50 rounded-lg">
-                    <MessageSquare className="w-4 h-4 text-neutral-400" />
-                  </div>
-                  <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium">Feedback</h2>
-                </div>
-                <div className="text-neutral-300 leading-relaxed">
-                  {interview.feedbackStr}
-                </div>
-              </div>
-            )}
-
-            {interview.improvements &&  (
-              <div className="bg-black p-8 rounded-2xl border border-neutral-800/50">
-                <div className="flex items-center gap-3 flex-col">
-                  {interview.improvements.map((improve: string, idx: number) => (
-                    <div key={idx} className="w-full text-white">
-                      <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium mb-4">Improvement Suggestion {idx + 1}</h2>
-                      {improve}
-                      </div> 
-                    ))
-                   }  
-                </div>
-              </div>
-            )
-            }
-             {interview.strengths &&  (
-              <div className="bg-black p-8 rounded-2xl border border-neutral-800/50">
-                <div className="flex items-center gap-3 flex-col">
-                  {interview.strengths.map((strength: string, idx: number) => (
-                    <div key={idx} className="w-full text-white">
-                      <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium mb-4">Strength -&gt;  {idx + 1}</h2>
-                      {strength}
-                      </div> 
-                    ))
-                   }  
-                </div>
-              </div>
-            )} */}
           </div>
         </div>
       </main>

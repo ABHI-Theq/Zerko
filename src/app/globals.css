@@ -149,7 +149,7 @@
 }
   /* Hide scrollbar but keep scrolling */
 ::-webkit-scrollbar {
-  display: none;
+  display: transperent;
 }
 
 html, body {

@@ -9,13 +9,20 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
+import { MoreVertical, Trash } from "lucide-react";
+import {
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+} from "@/components/ui/popover";
+
 import { useInterviewConAll } from '@/context/InterviewAllContext';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, FileText, ArrowRight, Briefcase } from 'lucide-react';
 
 const InterviewsBoard = () => {
     const router = useRouter();
-    const { interviews, loading } = useInterviewConAll();
+    const { interviews,setInterviews, loading } = useInterviewConAll();
 
     if (loading) {
         return (
@@ -42,6 +49,32 @@ const InterviewsBoard = () => {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const handleDelete =async (id: string) => {
+        toast.loading("Deleting interview...");
+
+        try {
+            const res=await fetch(`/api/interview/${id}/end`, {
+                method: 'GET'
+            });
+            const data=await res.json();
+            if(data.error){
+                throw new Error(data.error);
+            }
+            toast.dismiss();
+            toast.success("Interview deleted successfully");
+        } catch (error) {
+            const errMsg = error instanceof Error ? error.message : "Error deleting interview";
+            toast.dismiss();
+            toast.error(errMsg);
+            return;
+        }
+            //Updating Interview Context after deletion
+            setInterviews((interviews)=>{
+                return  interviews.filter((interview)=>interview.id!==id)
+            });
+    };
+
+
     return (
         <div className='flex w-full items-center justify-start'>
             {interviews && interviews.length > 0 ? (
@@ -53,6 +86,29 @@ const InterviewsBoard = () => {
                                      rounded-xl shadow-sm hover:shadow-xl transition-all duration-300
                                      hover:scale-[1.02] hover:border-gray-300"
                         >
+
+                            <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button className="p-1.5 rounded-md hover:bg-gray-100 transition">
+                                            <MoreVertical className="w-5 h-5 text-gray-600" />
+                                        </button>
+                                    </PopoverTrigger>
+
+                                    <PopoverContent className="w-32 p-2" align="end">
+                                        <button
+                                            onClick={async() => handleDelete(interview.id as string)}
+                                            className="flex items-center gap-2 w-full px-2 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
+                                        >
+                                            <Trash className="w-4 h-4" />
+                                            Delete
+                                        </button>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+
+
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                             <CardHeader className="relative">
@@ -81,10 +137,13 @@ const InterviewsBoard = () => {
                             <CardContent className="relative z-10">
                                 <div className="space-y-2.5">
                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                        <FileText className="w-10 h-10 text-gray-400" />
+                                        <FileText className="w-5 h-5 text-gray-400" />
                                         <p className="line-clamp-2 leading-relaxed">
                                             {interview.jobDescription && interview.jobDescription.length > 100
-                                                ? `${interview.jobDescription.substring(0, 100)}...`
+                                                ?(
+                                                    <div dangerouslySetInnerHTML={{__html:interview.jobDescription.substring(0, 100).replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")}}/>
+
+                                                )
                                                 : interview.jobDescription || 'No description'}
                                         </p>
                                     </div>
@@ -103,18 +162,18 @@ const InterviewsBoard = () => {
                             </CardContent>
 
                             <CardFooter className="relative z-10 border-t border-gray-100 bg-gray-50/80 rounded-b-xl">
-    <button
-        onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/interviews/${interview.id}`);
-        }}
-        className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(`/interviews/${interview.id}`);
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 
                    hover:text-gray-900 transition-all group cursor-pointer"
-    >
-        <span>View Details</span>
-        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-    </button>
-</CardFooter>
+                                >
+                                    <span>View Details</span>
+                                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </CardFooter>
 
                         </Card>
                     ))}
