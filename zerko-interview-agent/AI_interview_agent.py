@@ -18,7 +18,6 @@ def interview_agent_auto_number(
     LAST_QUESTION_THRESHOLD = 2 * 60 * 1000
     END_INTERVIEW_THRESHOLD = 30 * 1000
 
-    # Pre-calculate question indexes
     asked_question_ids = [
         int(m.get("question_id", -1))
         for m in messages
@@ -30,7 +29,6 @@ def interview_agent_auto_number(
     )
     next_question = next_question_obj["question"] if next_question_obj else None
 
-    # On start
     if not messages:
         return {
             "AIResponse": f"Welcome to the interview for {Post}! Let’s begin!\n\n{questions_list[0]['question']}",

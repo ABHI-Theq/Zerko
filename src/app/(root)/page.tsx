@@ -1,37 +1,13 @@
 "use client";
-
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import toast from "react-hot-toast";
-
-import { useState } from "react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { Spinner } from "@/components/ui/spinner";
 
 export default function Home() {
   const { status } = useSession();
   const router=useRouter();
 
-  // const onOut = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     await signOut({ redirect: false });
-  //     toast.success("Signed out successfully");
-  //   } catch (error) {
-  //     const errMsg =
-  //       error instanceof Error ? error.message : "Error while signing out";
-  //     toast.error(errMsg);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-//  if (isLoading)
-//     return (
-//       <div className="flex h-[100vh] items-center justify-center">
-//         <Spinner className="size-20" />
-//       </div>
-//     );
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-center items-center">

@@ -9,7 +9,6 @@ export async function POST(
   try {
     const { feedback } = await request.json();
     const session=await auth();
-    console.log(session);
     
     const {id} =await params;
 
@@ -26,7 +25,6 @@ export async function POST(
         feedbackGenerated: true,
       },
     });
-    console.log("feedback saved");
     
 
     return NextResponse.json({ success: true, data: updatedInterview });
