@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Zerko Logo](public/logo.png)
+<img src="public/logo.png" alt="Zerko Logo" width="200" />
 
 **Intelligent Interview Platform with Voice AI**
 
