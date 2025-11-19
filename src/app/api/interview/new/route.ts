@@ -12,10 +12,27 @@ interface CloudinaryResponse {
 }
 
 export async function POST(req: Request) {
-  const session = await auth();
-
   try {
-    const formData = await req.formData();
+    const session = await auth();
+
+    if (!session || !session.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized - Please sign in" },
+        { status: 401 }
+      );
+    }
+
+    // Parse form data
+    let formData;
+    try {
+      formData = await req.formData();
+    } catch (parseError) {
+      console.error("Error parsing form data:", parseError);
+      return NextResponse.json(
+        { error: "Invalid form data" },
+        { status: 400 }
+      );
+    }
 
     const post = formData.get("post") as string | null;
     const jobDescription = formData.get("jobDescription") as string | null;
@@ -97,16 +114,13 @@ export async function POST(req: Request) {
     }
 
     // 🟢 Create interview in DB
-    const userId = session?.user?.id;
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = session.user.id;
+
     if (!post || !jobDescription || !interviewType || !duration) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
       );
-      console.log();
     }
 
     const newInterview = await prisma.interview.create({
@@ -121,14 +135,32 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log("Interview created successfully:", {
+      interviewId: newInterview.id,
+      userId: userId,
+      timestamp: new Date().toISOString()
+    });
+
     revalidatePath("/dashboard");
 
-    return NextResponse.json({ interviewDets: newInterview }, { status: 201 });
-  } catch (error) {
+    return NextResponse.json(
+      { 
+        interviewDets: newInterview,
+        success: true,
+        message: "Interview created successfully"
+      },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error("Error creating interview:", error);
+    
     const errMsg =
       error instanceof Error
         ? error.message
         : "Error occurred while creating interview";
-    return NextResponse.json({ error: errMsg }, { status: 500 });
+    return NextResponse.json(
+      { error: errMsg },
+      { status: 500 }
+    );
   }
 }

@@ -89,7 +89,9 @@ def feedbackReport_agent(
         temperature = 0.5
 
 
-    logger.info("Generating feedback: post=%s, type=%s, model=%s, temp=%s", payload.post, payload.interview_type, model_name, temperature)
+    # Log feedback generation start with interview context (Requirement 9.5)
+    logger.info("Generating feedback: post=%s, type=%s, model=%s, temp=%s, transcript_length=%d", 
+                payload.post, payload.interview_type, model_name, temperature, len(payload.transcript))
 
     output_parser = PydanticOutputParser(pydantic_object=FeedBackOutput)
 
@@ -212,6 +214,12 @@ Keep tone objective and concise. Avoid generic fluff.
             "parse_error": str(parse_error) if parse_error else None
         }
     }
+    
+    # Log feedback generation completion (Requirement 9.5)
+    logger.info("Feedback generation completed successfully: post=%s, overall_rating=%s, attempts=%d", 
+                payload.post, 
+                parsed_model.overall_rating if parsed_model else "N/A",
+                attempts)
 
     return result
 

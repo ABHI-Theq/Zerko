@@ -3,30 +3,59 @@ import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  console.log(id);
-  
-  const session = await auth();
-
   try {
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id } = await params;
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: "Interview ID is required" },
+        { status: 400 }
+      );
+    }
+
+    console.log("Ending interview:", id);
+    
+    const session = await auth();
+
+    if (!session || !session.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized - Please sign in" },
+        { status: 401 }
+      );
     }
 
     const interview = await prisma.interview.delete({
       where: {
-        id: id
+        id: id,
+        userId: session.user.id
       }
     });
 
-    return NextResponse.json({
-      status: 200,
-      success: true,
-      interviewDets: id
+    console.log("Interview ended successfully:", {
+      interviewId: id,
+      timestamp: new Date().toISOString()
     });
-  } catch (error) {
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Interview ended successfully",
+        interviewDets: id
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
     console.error("Error ending interview:", error);
-    const errMsg = error instanceof Error ? error.message : "Error while updating interview status";
+    
+    // Handle Prisma-specific errors
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { error: "Interview not found or you don't have permission to delete it" },
+        { status: 404 }
+      );
+    }
+
+    const errMsg = error instanceof Error ? error.message : "Error while ending interview";
     return NextResponse.json(
       { error: errMsg },
       { status: 500 }

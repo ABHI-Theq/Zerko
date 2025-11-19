@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 import logging
 load_dotenv()
 
+# Configure logging for Interview Agent (Requirement 9.4)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def interview_agent_auto_number(
     Post: str,
     JobDescription: str,
@@ -14,6 +18,10 @@ def interview_agent_auto_number(
     force_next: bool = False,
     lastQuestionAnswered: bool = False
 ):
+    # Log Interview Agent request with context (Requirement 9.4)
+    logger.info("Interview Agent request received: post='%s', messages_count=%d, time_left=%s, force_next=%s, lastQuestionAnswered=%s",
+                Post, len(messages), time_left, force_next, lastQuestionAnswered)
+    
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.6)
     LAST_QUESTION_THRESHOLD = 2 * 60 * 1000
     END_INTERVIEW_THRESHOLD = 30 * 1000
@@ -30,12 +38,15 @@ def interview_agent_auto_number(
     next_question = next_question_obj["question"] if next_question_obj else None
 
     if not messages:
-        return {
-            "AIResponse": f"Welcome to the interview for {Post}! Let’s begin!\n\n{questions_list[0]['question']}",
+        response = {
+            "AIResponse": f"Welcome to the interview for {Post}! Let's begin!\n\n{questions_list[0]['question']}",
             "endInterview": False,
             "question_id": questions_list[0].get("id") if "id" in questions_list[0] else 0,
             "lastQuestion": False
         }
+        logger.info("Interview Agent response (initial): question_id=%s, endInterview=%s, lastQuestion=%s", 
+                    response["question_id"], response["endInterview"], response["lastQuestion"])
+        return response
 
     # ----------- Handle No Answer Detected ------------
     if messages and messages[-1]["role"] == "candidate":
@@ -50,6 +61,8 @@ def interview_agent_auto_number(
             "did not answer"
         ]
         if last_input in no_answer_markers:
+            logger.info("No answer detected, moving to next question")
+            
             # Determine the next question index by locating the last interviewer question_id
             last_interviewer_qid = None
             for m in reversed(messages):
@@ -95,22 +108,27 @@ def interview_agent_auto_number(
                 if time_left is not None and time_left <= LAST_QUESTION_THRESHOLD and time_left > END_INTERVIEW_THRESHOLD:
                     response_text += "\n\nWe are approaching the end, this will be your final question."
                 response_id = next_question_obj.get("id") if next_question_obj and "id" in next_question_obj else next_question_idx
-                return {
+                response = {
                     "AIResponse": response_text,
                     "endInterview": False,
                     "question_id": response_id,
                     "lastQuestion": (time_left is not None and time_left <= LAST_QUESTION_THRESHOLD and time_left > END_INTERVIEW_THRESHOLD)
                 }
+                logger.info("Interview Agent response (no answer, next question): question_id=%s, endInterview=%s, lastQuestion=%s", 
+                            response["question_id"], response["endInterview"], response["lastQuestion"])
+                return response
             # No more questions -> return final feedback and end interview
             else:
                 feedback_note = "Thank you for participating in this interview. Based on your responses, you have demonstrated valuable insights and professional knowledge."
                 response_text = f"{feedback_note}\n\nThis concludes our interview. Thank you for your time!"
-                return {
+                response = {
                     "AIResponse": response_text,
                     "endInterview": True,
                     "question_id": None,
                     "lastQuestion": False
                 }
+                logger.info("Interview Agent response (no answer, no more questions): endInterview=%s", response["endInterview"])
+                return response
 
     # ----------- Feedback/End Logic ------------
     end_interview = False
@@ -121,30 +139,37 @@ def interview_agent_auto_number(
         # If last question was asked and candidate just answered, only return feedback
         feedback_note = "Thank you for participating in this interview. Based on your responses, you have demonstrated valuable insights and professional knowledge."
         response_text = f"{feedback_note}\n\nThis concludes our interview. Thank you for your time!"
-        return {
+        response = {
             "AIResponse": response_text,
             "endInterview": True,
             "question_id": None,
             "lastQuestion": False
         }
+        logger.info("Interview Agent response (last question answered): endInterview=%s", response["endInterview"])
+        return response
 
     if time_left is not None:
         if time_left <= END_INTERVIEW_THRESHOLD:
             feedback_note = "Thank you for participating in this interview. Based on your responses, you have demonstrated valuable insights and professional knowledge."
             response_text = f"{feedback_note}\n\nThis concludes our interview as we've reached the time limit. Thank you for your time!"
-            return {
+            response = {
                 "AIResponse": response_text,
                 "endInterview": True,
                 "question_id": None,
                 "lastQuestion": False
             }
+            logger.info("Interview Agent response (time limit reached): endInterview=%s, time_left=%s", 
+                        response["endInterview"], time_left)
+            return response
         elif time_left <= LAST_QUESTION_THRESHOLD:
             last_question = True
             extra_note = "\n\nWe are approaching the end, this will be your final question."
+            logger.info("Marking as last question due to time constraint: time_left=%s", time_left)
 
     if force_next and next_question:
         response_text = next_question + extra_note
         response_id = next_question_obj.get("id") if next_question_obj and "id" in next_question_obj else next_question_idx
+        logger.info("Using forced next question: question_id=%s", response_id)
     else:
         recent_messages = messages[-5:] if len(messages) > 5 else messages
         prompt_template = PromptTemplate(
@@ -175,8 +200,12 @@ Next line (what interviewer should say):
             questions_list="\n".join([f"{q['id']}. {q['question']}" for q in questions_list]),
             messages="\n".join([f"{m['role']}: {m['content']}" for m in recent_messages])
         )
+        
+        logger.info("Invoking LLM for next question generation")
         response = llm.invoke(formatted_prompt)
         raw_text = response.content.strip()
+        logger.info("LLM response received, processing output")
+        
         # If this isn't the very first interviewer message, remove common greeting lines if model included them
         if asked_question_ids:
             lines = [ln for ln in raw_text.splitlines() if ln.strip() != ""]
@@ -196,9 +225,14 @@ Next line (what interviewer should say):
         response_text = response_text + extra_note
         response_id = next_question_obj.get("id") if next_question_obj and "id" in next_question_obj else next_question_idx
 
-    return {
+    final_response = {
         "AIResponse": response_text,
         "endInterview": end_interview,
         "question_id": response_id,
         "lastQuestion": last_question
     }
+    
+    logger.info("Interview Agent response (standard): question_id=%s, endInterview=%s, lastQuestion=%s", 
+                final_response["question_id"], final_response["endInterview"], final_response["lastQuestion"])
+    
+    return final_response

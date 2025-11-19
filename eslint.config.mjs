@@ -21,7 +21,7 @@ const eslintConfig = [
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
-      // do NOT disable triple-slash-reference globally here
+      "@typescript-eslint/no-require-imports ":"off"
     },
   },
   {

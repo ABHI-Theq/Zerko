@@ -149,7 +149,9 @@ async def generate_interview_feedback(interview_id: str, req: FeedBackReportRequ
       - meta (metadata)
     """
     try:
-        logger.info(f"Generating feedback for interview %s, post=%s type=%s", interview_id, req.post, req.interview_type)
+        # Log feedback generation request with interview ID (Requirement 9.5)
+        logger.info("Feedback generation request received: interview_id=%s, post='%s', type=%s, transcript_length=%d", 
+                    interview_id, req.post, req.interview_type, len(req.transcript))
 
         feedback_result = feedbackReport_agent(
             post=req.post,
@@ -181,6 +183,11 @@ async def generate_interview_feedback(interview_id: str, req: FeedBackReportRequ
         "feedback": parsed if parsed else {"raw": raw},
         "meta": meta,
     }
+    
+    # Log feedback generation completion with interview ID (Requirement 9.5)
+    logger.info("Feedback generation completed successfully: interview_id=%s, post='%s', overall_rating=%s", 
+                interview_id, req.post, 
+                parsed.get("overall_rating") if parsed else "N/A")
 
     return response_payload
 

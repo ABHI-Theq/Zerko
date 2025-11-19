@@ -17,31 +17,69 @@ declare global {
   }
 }
 
-// Enhanced Browser detection with async Brave detection
+// Enhanced Browser detection with async Brave detection and comprehensive browser support
 const getBrowserInfo = async () => {
-  if (typeof window === 'undefined') return { isBrave: false, isChrome: false, isFirefox: false, isSafari: false };
+  if (typeof window === 'undefined') {
+    return { 
+      isBrave: false, 
+      isChrome: false, 
+      isFirefox: false, 
+      isSafari: false, 
+      isEdge: false,
+      browserName: 'unknown'
+    };
+  }
   
   const userAgent = navigator.userAgent;
-  const isChrome = userAgent.includes('Chrome') && !userAgent.includes('Edg');
-  const isFirefox = userAgent.includes('Firefox');
-  const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
   
-  // Proper async Brave detection
+  // Detect Edge (must check before Chrome since Edge includes 'Chrome' in UA)
+  const isEdge = userAgent.includes('Edg/') || userAgent.includes('Edge/');
+  
+  // Detect Chrome (but not Edge or Brave)
+  const isChrome = userAgent.includes('Chrome') && !isEdge;
+  
+  // Detect Firefox
+  const isFirefox = userAgent.includes('Firefox');
+  
+  // Detect Safari (must exclude Chrome-based browsers)
+  const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent) && !isChrome && !isEdge;
+  
+  // Proper async Brave detection with multiple fallback mechanisms
   let isBrave = false;
+  
+  // Method 1: Official Brave API (most reliable)
   if (window.brave && typeof window.brave.isBrave === 'function') {
     try {
       isBrave = await window.brave.isBrave();
+      console.log('Brave detected via official API');
     } catch (e) {
-      console.warn('Brave detection failed:', e);
+      console.warn('Brave API detection failed:', e);
     }
   }
   
-  // Fallback Brave detection
+  // Method 2: Fallback - Check user agent string
   if (!isBrave && userAgent.includes('Brave')) {
     isBrave = true;
+    console.log('Brave detected via user agent');
   }
   
-  return { isBrave, isChrome, isFirefox, isSafari };
+  // Method 3: Fallback - Check for Brave-specific navigator properties
+  if (!isBrave && (navigator as any).brave !== undefined) {
+    isBrave = true;
+    console.log('Brave detected via navigator property');
+  }
+  
+  // Determine browser name for logging
+  const browserName = isBrave ? 'Brave' 
+    : isEdge ? 'Edge'
+    : isChrome ? 'Chrome'
+    : isFirefox ? 'Firefox'
+    : isSafari ? 'Safari'
+    : 'unknown';
+  
+  console.log(`Browser detected: ${browserName}`);
+  
+  return { isBrave, isChrome, isFirefox, isSafari, isEdge, browserName };
 };
 
 // Speech recognition support check
@@ -50,45 +88,93 @@ const isSpeechRecognitionSupported = () => {
   return ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 };
 
-// Enhanced speech recognition with Brave-specific handling
+// Enhanced speech recognition manager with comprehensive browser-specific handling
 class SpeechRecognitionManager {
   private recognition: any = null;
   private isSupported: boolean = false;
   private isAvailable: boolean = false;
-  private isBrave: boolean = false;
+  private browserInfo: {
+    isBrave: boolean;
+    isChrome: boolean;
+    isFirefox: boolean;
+    isSafari: boolean;
+    isEdge: boolean;
+    browserName: string;
+  };
 
-  constructor(isBrave: boolean = false) {
-    this.isBrave = isBrave;
+  constructor(browserInfo: {
+    isBrave: boolean;
+    isChrome: boolean;
+    isFirefox: boolean;
+    isSafari: boolean;
+    isEdge: boolean;
+    browserName: string;
+  }) {
+    this.browserInfo = browserInfo;
     this.isSupported = isSpeechRecognitionSupported();
+    
     if (this.isSupported) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       try {
         this.recognition = new SpeechRecognition();
         this.isAvailable = true;
+        console.log(`SpeechRecognitionManager initialized for ${browserInfo.browserName}`);
       } catch (error) {
         console.error('Failed to initialize SpeechRecognition:', error);
         this.isAvailable = false;
       }
+    } else {
+      console.warn('Speech recognition not supported in this browser');
     }
   }
 
   createInstance() {
-    if (!this.isAvailable) return null;
+    if (!this.isAvailable) {
+      console.error('Speech recognition not available');
+      return null;
+    }
     
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    // Brave-optimized configuration
-    if (this.isBrave) {
+    // Apply browser-specific configurations
+    console.log(`Creating speech recognition instance for ${this.browserInfo.browserName}`);
+    
+    if (this.browserInfo.isBrave) {
+      // Brave-optimized configuration
       recognition.continuous = false;
-      recognition.interimResults = false; // Disable interim results for Brave
+      recognition.interimResults = false; // Disable interim results for Brave stability
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
-    } else {
+      console.log('Applied Brave-specific configuration: interimResults=false');
+    } else if (this.browserInfo.isChrome || this.browserInfo.isEdge) {
+      // Chrome and Edge (Chromium-based) configuration
+      recognition.continuous = false;
+      recognition.interimResults = true; // Enable interim results for better UX
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+      console.log('Applied Chrome/Edge configuration: interimResults=true');
+    } else if (this.browserInfo.isFirefox) {
+      // Firefox configuration (more conservative)
+      recognition.continuous = false;
+      recognition.interimResults = false; // Firefox has limited support for interim results
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+      console.log('Applied Firefox configuration: interimResults=false');
+    } else if (this.browserInfo.isSafari) {
+      // Safari configuration
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
+      console.log('Applied Safari configuration');
+    } else {
+      // Default configuration for unknown browsers
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+      console.log('Applied default configuration for unknown browser');
     }
     
     return recognition;
@@ -96,6 +182,10 @@ class SpeechRecognitionManager {
 
   isRecognitionAvailable() {
     return this.isAvailable;
+  }
+
+  getBrowserInfo() {
+    return this.browserInfo;
   }
 }
 
@@ -112,7 +202,14 @@ export default function Page() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [agentThinking, setAgentThinking] = useState(false);
   const [endInterviewed, setEndInterviewed] = useState(false);
-  const [browserInfo, setBrowserInfo] = useState({ isBrave: false, isChrome: false, isFirefox: false, isSafari: false });
+  const [browserInfo, setBrowserInfo] = useState({ 
+    isBrave: false, 
+    isChrome: false, 
+    isFirefox: false, 
+    isSafari: false, 
+    isEdge: false,
+    browserName: 'unknown'
+  });
   const [microphoneGranted, setMicrophoneGranted] = useState(false);
   const [awaitingPermission, setAwaitingPermission] = useState(false);
   const [recognitionAvailable, setRecognitionAvailable] = useState(true);
@@ -121,6 +218,14 @@ export default function Page() {
   const [manualInputText, setManualInputText] = useState("");
   const [braveWarningShown, setBraveWarningShown] = useState(false);
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
+  const [apiRetryCount, setApiRetryCount] = useState(0);
+  const [showRetryButton, setShowRetryButton] = useState(false);
+  const [lastFailedRequest, setLastFailedRequest] = useState<{
+    userText: string;
+    messages: any[];
+    timestamp: number;
+  } | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const recognitionManager = useRef<SpeechRecognitionManager | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -151,8 +256,8 @@ export default function Page() {
       const info = await getBrowserInfo();
       setBrowserInfo(info);
       
-      // Initialize recognition manager with Brave flag
-      recognitionManager.current = new SpeechRecognitionManager(info.isBrave);
+      // Initialize recognition manager with full browser info
+      recognitionManager.current = new SpeechRecognitionManager(info);
       setRecognitionAvailable(recognitionManager.current.isRecognitionAvailable());
       
       // Show Brave-specific warning
@@ -160,7 +265,7 @@ export default function Page() {
         setBraveWarningShown(true);
         toast((t) => (
           <div className="space-y-2">
-            <p className="font-semibold">Brave Browser Detected</p>
+            <p className="font-semibold">🛡️ Brave Browser Detected</p>
             <p className="text-sm">For best experience:</p>
             <ul className="text-xs space-y-1 list-disc list-inside">
               <li>Disable Shields for this site</li>
@@ -173,6 +278,12 @@ export default function Page() {
           icon: '🛡️',
         });
       }
+      
+      // Log browser detection for debugging
+      console.log('Browser initialization complete:', {
+        browser: info.browserName,
+        speechRecognitionAvailable: recognitionManager.current?.isRecognitionAvailable()
+      });
     };
     
     initBrowser();
@@ -276,13 +387,24 @@ export default function Page() {
     window.speechSynthesis.speak(utter);
   };
 
-  // Initialize interview
+  // Initialize interview with enhanced error handling
   useEffect(() => {
     const initInterview = async () => {
       if (!microphoneGranted || messages.length > 0) return;
       
       setAgentThinking(true);
+      console.log('Initializing interview:', {
+        post,
+        interviewType: interview.interviewType,
+        questionsCount: questions?.length || 0,
+        timestamp: new Date().toISOString()
+      });
+      
       try {
+        // API call with timeout (30 seconds)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
         const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/interview/next`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -296,19 +418,79 @@ export default function Page() {
             time_left: timeLeft,
             force_next
           }),
+          signal: controller.signal
         });
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          console.error('Interview initialization API error:', {
+            status: res.status,
+            statusText: res.statusText,
+            errorData,
+            timestamp: new Date().toISOString()
+          });
+          
+          // User-friendly error messages based on status code
+          let errorMessage = 'Failed to initialize interview. ';
+          if (res.status === 500) {
+            errorMessage += 'The interview service is experiencing issues.';
+          } else if (res.status === 503) {
+            errorMessage += 'The interview service is temporarily unavailable.';
+          } else if (res.status === 429) {
+            errorMessage += 'Too many requests. Please wait a moment.';
+          } else {
+            errorMessage += `Server returned error ${res.status}.`;
+          }
+          errorMessage += ' Please refresh the page to try again.';
+          
+          throw new Error(errorMessage);
+        }
+        
         const data = await res.json();
+        
+        console.log('Interview initialized successfully:', {
+          questionId: data.data.question_id,
+          lastQuestion: data.data.lastQuestion,
+          timestamp: new Date().toISOString()
+        });
+        
         setMessages([{
           role: "interviewer",
           content: data.data.AIResponse,
           question_id: data.data.question_id
         }]);
         setLastQuestionFlag(!!data.data.lastQuestion);
+        
+        // Clear any previous errors on successful initialization
+        setApiError(null);
+        
         speak(data.data.AIResponse);
-      } catch (err) {
-        setApiError("Interview agent is not working.");
-        setMessages([{ role: "interviewer", content: "Interview agent is not working." }]);
+      } catch (err: any) {
+        console.error('Interview initialization error:', {
+          error: err,
+          message: err.message,
+          name: err.name,
+          timestamp: new Date().toISOString()
+        });
+        
+        let errorMessage = "Failed to initialize interview. ";
+        
+        if (err.name === 'AbortError') {
+          errorMessage = "Interview initialization timed out after 30 seconds. The service is taking too long to respond. Please refresh the page and try again.";
+        } else if (err.message.includes('fetch') || err.message.includes('network')) {
+          errorMessage = "Network error during initialization. Please check your internet connection and refresh the page.";
+        } else if (err.message.includes('Failed to initialize')) {
+          // Use the detailed error message from the status code handling
+          errorMessage = err.message;
+        } else {
+          errorMessage = "Interview agent is not working. Please refresh the page and try again.";
+        }
+        
+        setApiError(errorMessage);
+        setMessages([{ role: "interviewer", content: errorMessage }]);
+        toast.error(errorMessage, { duration: 7000 });
       } finally {
         setLoading(false);
         setAgentThinking(false);
@@ -319,16 +501,49 @@ export default function Page() {
       initInterview();
     }
     
-    return cleanup;
+    // Cleanup on component unmount (Requirement 12.5)
+    return () => {
+      console.log('Component unmounting - calling cleanup');
+      cleanup();
+    };
   }, [microphoneGranted]);
 
-  // Timer
+  // Timer with automatic interview termination at 30 seconds (Requirement 11.2)
   useEffect(() => {
     if (interviewEnded || !microphoneGranted) return;
+    
+    // Automatic interview end at 30 seconds (Requirement 11.2)
+    if (timeLeft <= 30000 && !endPending && !agentThinking) {
+      console.log('Time limit reached (30 seconds), automatically ending interview');
+      setEndPending(true);
+      
+      // Stop any ongoing speech recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.warn('Error stopping recognition on time limit:', e);
+        }
+      }
+      
+      // Cancel any ongoing TTS
+      window.speechSynthesis.cancel();
+      
+      toast.loading('Time limit reached. Ending interview...', { duration: 3000 });
+      
+      // End interview automatically
+      setTimeout(() => {
+        endInterview(true);
+      }, 500);
+      return;
+    }
+    
+    // Normal timer countdown
     if (timeLeft <= 0 && !agentThinking && !isMicOn) {
       if (!endPending) endInterview(true);
       return;
     }
+    
     const timer = setInterval(() => setTimeLeft((t) => t - 1000), 1000);
     return () => clearInterval(timer);
   }, [timeLeft, interviewEnded, agentThinking, isMicOn, endPending, microphoneGranted]);
@@ -340,12 +555,14 @@ export default function Page() {
       return;
     }
 
-    // Reset state
+    // Reset state for new listening session
     browserRestartRef.current = 0;
-    sessionTranscriptRef.current = "";
-    lastSpokenAtRef.current = null;
+    sessionTranscriptRef.current = ""; // Clear session transcript (Requirement 5.5)
+    lastSpokenAtRef.current = null; // Reset timestamp tracking (Requirement 5.1)
     explicitStopRef.current = false;
     setNetworkRetryCount(0);
+    
+    console.log('Starting new listening session with clean state');
 
     let hasSpokenSomething = false;
     let recognitionErrorOccurred = false;
@@ -371,10 +588,14 @@ export default function Page() {
 
     recognition.onresult = (event: any) => {
       console.log('Speech recognition result received');
+      
+      // Reset silence timer on ANY speech result (including interim results)
+      // This implements Requirements 5.1 and 5.4
       lastSpokenAtRef.current = Date.now();
       hasSpokenSomething = true;
 
       let finalTranscript = "";
+      let hasInterimResults = false;
       
       // For Brave, prioritize final results
       if (browserInfo.isBrave) {
@@ -384,38 +605,70 @@ export default function Page() {
           }
         }
       } else {
+        // For other browsers, process both interim and final results
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
             finalTranscript += transcript + " ";
+          } else {
+            hasInterimResults = true;
+            // Log interim results for debugging
+            console.log('Interim result detected:', transcript);
           }
         }
       }
 
+      // Accumulate session transcript (Requirement 5.5)
       if (finalTranscript.trim()) {
         sessionTranscriptRef.current += finalTranscript;
-        console.log('Current transcript:', sessionTranscriptRef.current);
+        console.log('Session transcript updated:', sessionTranscriptRef.current);
+      }
+      
+      // Log silence timer reset for interim results (Requirement 5.4)
+      if (hasInterimResults) {
+        console.log('Silence timer reset on interim result');
       }
     };
 
     recognition.onerror = (event: any) => {
-      console.error("Recognition error:", event?.error);
+      const errorType = event?.error || 'unknown';
+      const errorMessage = event?.message || 'No error message provided';
+      
+      // Comprehensive error logging for all error types
+      console.error("Speech recognition error:", {
+        type: errorType,
+        message: errorMessage,
+        browser: browserInfo.browserName,
+        timestamp: new Date().toISOString(),
+        networkRetryCount: networkErrorCount,
+        hasSpokenSomething,
+        sessionTranscript: sessionTranscriptRef.current
+      });
+      
       recognitionErrorOccurred = true;
 
-      // BRAVE-SPECIFIC NETWORK ERROR HANDLING
-      if (event.error === 'network' && browserInfo.isBrave) {
+      // NETWORK ERROR HANDLING WITH EXPONENTIAL BACKOFF
+      if (errorType === 'network') {
         networkErrorCount++;
         setNetworkRetryCount(networkErrorCount);
         
-        console.log(`Brave network error (attempt ${networkErrorCount}/3)`);
+        console.log(`Network error detected (attempt ${networkErrorCount}/3)`, {
+          browser: browserInfo.browserName,
+          isBrave: browserInfo.isBrave
+        });
         
-        // Try to restart recognition for Brave network errors
+        // Try to restart recognition with exponential backoff
         if (networkErrorCount < 3) {
-          toast.loading(`Reconnecting speech recognition... (${networkErrorCount}/3)`, {
-            duration: 2000,
+          // Exponential backoff: 500ms, 1000ms, 1500ms
+          const backoffDelay = 500 * networkErrorCount;
+          
+          toast.loading(`Reconnecting... (${networkErrorCount}/3)`, {
+            duration: backoffDelay + 500,
           });
           
-          // Don't stop immediately - try to restart
+          console.log(`Retrying with exponential backoff: ${backoffDelay}ms`);
+          
+          // Don't stop immediately - try to restart with backoff
           setTimeout(() => {
             try {
               const newRecognition = recognitionManager.current?.createInstance();
@@ -424,32 +677,94 @@ export default function Page() {
                 // Reattach all handlers
                 setupRecognitionHandlers(newRecognition);
                 newRecognition.start();
+                console.log(`Speech recognition restarted after ${backoffDelay}ms delay`);
               }
             } catch (e) {
               console.error("Failed to restart after network error:", e);
               handleRecognitionFallback();
             }
-          }, 500);
+          }, backoffDelay);
           return;
         } else {
-          // After 3 attempts, offer manual input
-          toast.error('Voice recognition unavailable. Please use text input.', {
-            duration: 4000,
-          });
+          // After 3 attempts, automatically switch to fallback mode
+          console.log('Network error retry limit reached (3/3), switching to fallback mode');
+          
+          // Enhanced message for Brave users
+          if (browserInfo.isBrave) {
+            toast((t) => (
+              <div className="space-y-2">
+                <p className="font-semibold">🛡️ Voice Recognition Failed in Brave</p>
+                <p className="text-sm">After 3 attempts, voice recognition is unavailable.</p>
+                <p className="text-sm font-medium">Please use text input or click Retry.</p>
+              </div>
+            ), {
+              duration: 6000,
+              icon: '⚠️',
+            });
+          } else {
+            toast.error('Voice recognition unavailable. Switching to text input.', {
+              duration: 4000,
+            });
+          }
+          
           handleRecognitionFallback();
           return;
         }
       }
 
-      // Handle other errors
-      if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        toast.error(`Speech recognition error: ${event.error}`, { duration: 3000 });
+      // PERMISSION ERROR HANDLING (not-allowed)
+      if (errorType === 'not-allowed') {
+        console.error('Microphone permission denied:', {
+          browser: browserInfo.browserName,
+          isBrave: browserInfo.isBrave
+        });
+        
+        setRecognitionAvailable(false);
+        
+        const permissionMessage = browserInfo.isBrave
+          ? 'Microphone permission denied. Please disable Brave Shields and allow microphone access.'
+          : 'Microphone permission denied. Please allow microphone access in your browser settings.';
+        
+        toast.error(permissionMessage, { duration: 7000 });
+        setApiError(permissionMessage);
+        
+        explicitStopRef.current = true;
+        try { 
+          recognition.stop(); 
+        } catch (e) { 
+          /* ignore */ 
+        }
+        return;
       }
 
-      if (event.error === 'not-allowed') {
-        setRecognitionAvailable(false);
-        toast.error('Microphone permission denied. Please allow access.', { duration: 5000 });
+      // NO-SPEECH ERROR HANDLING
+      if (errorType === 'no-speech') {
+        console.log('No speech detected, moving to next question');
+        explicitStopRef.current = true;
+        try { 
+          recognition.stop(); 
+        } catch (e) { 
+          /* ignore */ 
+        }
+        // Submit "no answer detected" to move to next question
+        handleAnswer("No answer detected.");
+        return;
       }
+
+      // ABORTED ERROR (usually intentional stop)
+      if (errorType === 'aborted') {
+        console.log('Speech recognition aborted (intentional stop)');
+        explicitStopRef.current = true;
+        return;
+      }
+
+      // OTHER ERRORS - Log and display user-friendly message
+      console.error(`Unhandled speech recognition error: ${errorType}`, {
+        message: errorMessage,
+        browser: browserInfo.browserName
+      });
+      
+      toast.error(`Speech recognition error: ${errorType}`, { duration: 3000 });
 
       explicitStopRef.current = true;
       try { 
@@ -462,18 +777,30 @@ export default function Page() {
     recognition.onend = () => {
       console.log('Speech recognition ended');
       
+      // Proper cleanup of silence checker interval (Requirement 5.2, 5.3)
       if (silenceCheckerRef.current) {
         clearInterval(silenceCheckerRef.current);
         silenceCheckerRef.current = null;
+        console.log('Silence checker interval cleared');
       }
 
       setIsListening(false);
       setIsMicOn(false);
 
       const now = Date.now();
-      const silenceThreshold = browserInfo.isBrave ? 10000 : 8000; // Longer threshold for Brave
+      // Browser-specific silence thresholds: 8s standard, 10s Brave
+      const silenceThreshold = browserInfo.isBrave ? 10000 : 8000;
       const wasTrueSilence = explicitStopRef.current || 
                             (lastSpokenAtRef.current !== null && (now - lastSpokenAtRef.current) >= silenceThreshold);
+      
+      console.log('Recognition end analysis:', {
+        explicitStop: explicitStopRef.current,
+        lastSpokenAt: lastSpokenAtRef.current,
+        silenceDuration: lastSpokenAtRef.current ? now - lastSpokenAtRef.current : null,
+        silenceThreshold,
+        wasTrueSilence,
+        sessionTranscript: sessionTranscriptRef.current
+      });
 
       // If network error occurred multiple times, use fallback
       if (recognitionErrorOccurred && networkErrorCount >= 3) {
@@ -487,14 +814,20 @@ export default function Page() {
       }
 
       if (wasTrueSilence || hasSpokenSomething) {
+        // Submit accumulated session transcript (Requirement 5.5)
         const finalAnswer = sessionTranscriptRef.current.trim();
         if (finalAnswer) {
-          console.log('Submitting answer:', finalAnswer);
+          console.log('Submitting session transcript as answer:', {
+            length: finalAnswer.length,
+            transcript: finalAnswer
+          });
           handleAnswer(finalAnswer);
         } else if (hasSpokenSomething) {
+          console.log('Speech detected but transcript unclear');
           handleAnswer("Could not process the answer clearly.");
         } else {
           if (!recognitionErrorOccurred) {
+            console.log('No speech detected during session');
             handleAnswer("No answer detected.");
           } else {
             handleRecognitionFallback();
@@ -539,23 +872,41 @@ export default function Page() {
       rec.onend = recognition.onend;
     };
 
-    // Start silence detection (longer for Brave)
+    // Start silence detection with browser-specific thresholds (Requirements 5.2, 5.3)
+    // Clear any existing silence checker
     if (silenceCheckerRef.current) {
       clearInterval(silenceCheckerRef.current);
+      silenceCheckerRef.current = null;
     }
     
-    const silenceCheckInterval = browserInfo.isBrave ? 10000 : 8000;
+    // Browser-specific silence thresholds: 8s standard, 10s Brave
+    const silenceThreshold = browserInfo.isBrave ? 10000 : 8000;
+    
+    console.log(`Starting silence detection with ${silenceThreshold}ms threshold for ${browserInfo.browserName}`);
+    
+    // Continuous silence checker interval (Requirement 5.1, 5.2, 5.3)
     silenceCheckerRef.current = setInterval(() => {
-      const last = lastSpokenAtRef.current;
-      if (last && Date.now() - last >= silenceCheckInterval) {
-        explicitStopRef.current = true;
-        try {
-          if (recognitionRef.current) recognitionRef.current.stop();
-        } catch (e) {
-          // ignore
+      const lastSpoken = lastSpokenAtRef.current;
+      
+      if (lastSpoken) {
+        const silenceDuration = Date.now() - lastSpoken;
+        
+        // Check if silence threshold exceeded
+        if (silenceDuration >= silenceThreshold) {
+          console.log(`Silence detected: ${silenceDuration}ms >= ${silenceThreshold}ms threshold`);
+          explicitStopRef.current = true;
+          
+          try {
+            if (recognitionRef.current) {
+              recognitionRef.current.stop();
+              console.log('Speech recognition stopped due to silence');
+            }
+          } catch (e) {
+            console.warn('Error stopping recognition on silence:', e);
+          }
         }
       }
-    }, 1000);
+    }, 1000); // Check every second for continuous monitoring
 
     // Start recognition
     try {
@@ -596,32 +947,121 @@ export default function Page() {
     }
   };
 
-  // Main interview logic
-  const handleAnswer = async (userText: string) => {
-    console.log('Handling answer:', userText);
+  // Main interview logic with enhanced error handling (Requirement 7.2)
+  const handleAnswer = async (userText: string, isRetry: boolean = false) => {
+    console.log('Handling answer:', { userText, isRetry, apiRetryCount });
     setAgentThinking(true);
     setShowManualInput(false);
+    setShowRetryButton(false); // Hide retry button while processing
+    setIsRetrying(isRetry);
     
-    setMessages(prevMsgs => [...prevMsgs, { role: "candidate", content: userText }]);
+    // Only add message if not a retry (to avoid duplicates)
+    if (!isRetry) {
+      setMessages(prevMsgs => [...prevMsgs, { role: "candidate", content: userText }]);
+    }
+
+    // Prepare request data
+    const currentMessages = isRetry && lastFailedRequest 
+      ? lastFailedRequest.messages 
+      : [...messages, { role: "candidate", content: userText }];
 
     try {
+      // API call with timeout handling (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
       const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/interview/next`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           post, job_description, resumeData,
           questions,
-          messages: [...messages, { role: "candidate", content: userText }],
+          messages: currentMessages,
           interview_type: interview.interviewType,
           time_left: EndTime - Date.now(),
           force_next,
           lastQuestionAnswered: lastQuestionFlag
         }),
+        signal: controller.signal
       });
       
-      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      clearTimeout(timeoutId);
+      
+      // Enhanced API error handling with specific status codes
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.detail || `API returned ${res.status}`;
+        
+        console.error('API Error:', {
+          status: res.status,
+          statusText: res.statusText,
+          errorMessage,
+          timestamp: new Date().toISOString(),
+          isRetry,
+          apiRetryCount
+        });
+        
+        // User-friendly error messages based on status code
+        let userMessage = 'Failed to get AI response. ';
+        let canRetry = true;
+        
+        if (res.status === 500) {
+          userMessage += 'The interview service is experiencing issues.';
+        } else if (res.status === 503) {
+          userMessage += 'The interview service is temporarily unavailable.';
+        } else if (res.status === 429) {
+          userMessage += 'Too many requests. Please wait a moment before retrying.';
+        } else if (res.status >= 400 && res.status < 500) {
+          userMessage += 'Invalid request. Please contact support.';
+          canRetry = false; // Don't allow retry for client errors
+        } else {
+          userMessage += 'An unexpected error occurred.';
+        }
+        
+        // Store failed request for retry
+        if (canRetry && !isRetry) {
+          setLastFailedRequest({
+            userText,
+            messages: currentMessages,
+            timestamp: Date.now()
+          });
+          setShowRetryButton(true);
+          userMessage += ' You can retry or continue with text input.';
+        } else if (canRetry && isRetry) {
+          setShowRetryButton(true);
+          userMessage += ' Please try again or use text input.';
+        }
+        
+        setApiError(userMessage);
+        toast.error(userMessage, { duration: 6000 });
+        
+        // Preserve interview state - don't terminate
+        setAgentThinking(false);
+        setEndPending(false);
+        
+        // Offer fallback to text input after a delay
+        if (!showManualInput && canRetry) {
+          setTimeout(() => {
+            if (!showManualInput) {
+              setShowManualInput(true);
+              toast('You can continue with text input', { duration: 3000 });
+            }
+          }, 3000);
+        }
+        return;
+      }
       
       const data = await res.json();
+      
+      // Log successful API response
+      console.log('API Response received:', {
+        questionId: data.data.question_id,
+        endInterview: data.data.endInterview,
+        lastQuestion: data.data.lastQuestion,
+        timestamp: new Date().toISOString(),
+        wasRetry: isRetry
+      });
+      
       const aiResponse = {
         role: "interviewer",
         content: data.data.AIResponse,
@@ -629,9 +1069,27 @@ export default function Page() {
       };
       
       setMessages(prevMsgs => [...prevMsgs, aiResponse]);
-      setLastQuestionFlag(!!data.data.lastQuestion);
+      
+      // Handle last question flag from backend (Requirement 11.1)
+      if (data.data.lastQuestion) {
+        console.log('Last question flag received from backend - this is the final question');
+        setLastQuestionFlag(true);
+      } else {
+        setLastQuestionFlag(false);
+      }
+      
+      // Clear any previous API errors and retry state on success
+      setApiError(null);
+      setApiRetryCount(0);
+      setLastFailedRequest(null);
+      setShowRetryButton(false);
+      setIsRetrying(false);
 
+      // Handle interview end from backend (Requirements 11.2, 11.3)
       if (data.data.endInterview) {
+        console.log('Interview end signal received from backend');
+        setEndPending(true);
+        
         const utterance = new SpeechSynthesisUtterance(data.data.AIResponse);
         window.speechSynthesis.speak(utterance);
         utterance.onend = () => {
@@ -641,58 +1099,250 @@ export default function Page() {
       } else {
         speak(data.data.AIResponse);
       }
-    } catch (err) {
-      console.error('API Error:', err);
-      setApiError("Interview agent is not working.");
-      toast.error('Failed to get AI response');
-    } finally {
+    } catch (err: any) {
+      // Enhanced error logging with context
+      console.error('API Error:', {
+        error: err,
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+        timestamp: new Date().toISOString(),
+        userText,
+        messagesCount: messages.length,
+        isRetry,
+        apiRetryCount
+      });
+      
+      // Handle different error types with user-friendly messages
+      let errorMessage = "Failed to get AI response. ";
+      const canRetry = true;
+      
+      if (err.name === 'AbortError') {
+        errorMessage = "Request timed out after 30 seconds. The interview service is taking too long to respond.";
+        console.error('API request timeout after 30 seconds');
+      } else if (err.message.includes('fetch') || err.message.includes('network')) {
+        errorMessage = "Network error. Please check your internet connection.";
+        console.error('Network fetch error:', err.message);
+      } else {
+        errorMessage = "Interview agent is not working. An unexpected error occurred.";
+      }
+      
+      // Store failed request for retry
+      if (canRetry && !isRetry) {
+        setLastFailedRequest({
+          userText,
+          messages: currentMessages,
+          timestamp: Date.now()
+        });
+        setShowRetryButton(true);
+        errorMessage += ' You can retry or continue with text input.';
+      } else if (canRetry && isRetry) {
+        setShowRetryButton(true);
+        errorMessage += ' Please try again or use text input.';
+      }
+      
+      setApiError(errorMessage);
+      toast.error(errorMessage, { duration: 6000 });
+      
+      // Preserve interview state - allow retry or manual completion
       setAgentThinking(false);
       setEndPending(false);
+      setIsRetrying(false);
+      
+      // Offer fallback to text input after error
+      if (!showManualInput) {
+        setTimeout(() => {
+          if (!showManualInput) {
+            setShowManualInput(true);
+            toast('You can continue with text input', { duration: 3000 });
+          }
+        }, 3000);
+      }
     }
   };
-
-  // Cleanup
-  const cleanup = () => {
-    try {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort && recognitionRef.current.abort();
-        recognitionRef.current.stop();
-      }
-    } catch (e) { 
-      console.warn('Cleanup warning:', e);
+  
+  // Retry last failed API request with improved error handling
+  const handleRetryLastRequest = () => {
+    if (!lastFailedRequest) {
+      toast.error('No failed request to retry');
+      return;
     }
     
-    window.speechSynthesis.cancel();
-    recognitionRef.current = null;
+    // Check if request is too old (more than 5 minutes)
+    const requestAge = Date.now() - lastFailedRequest.timestamp;
+    if (requestAge > 300000) {
+      toast.error('Request is too old to retry. Please continue with a new answer.');
+      setLastFailedRequest(null);
+      setShowRetryButton(false);
+      setShowManualInput(true);
+      return;
+    }
     
-    [silenceTimerRef, silenceCheckerRef].forEach(ref => {
-      if (ref.current) {
-        clearTimeout(ref.current);
-        clearInterval(ref.current);
-        ref.current = null;
-      }
+    console.log('Retrying last failed request:', {
+      userText: lastFailedRequest.userText,
+      timestamp: lastFailedRequest.timestamp,
+      age: requestAge,
+      previousRetries: apiRetryCount
     });
     
-    lastSpokenAtRef.current = null;
-    explicitStopRef.current = false;
+    const newRetryCount = apiRetryCount + 1;
+    
+    // Limit retry attempts to prevent infinite loops
+    if (newRetryCount > 3) {
+      toast.error('Maximum retry attempts reached. Please use text input to continue.');
+      setShowRetryButton(false);
+      setShowManualInput(true);
+      setLastFailedRequest(null);
+      setApiRetryCount(0);
+      return;
+    }
+    
+    setApiRetryCount(newRetryCount);
+    
+    toast.loading(`Retrying request (attempt ${newRetryCount}/3)...`, { duration: 2000 });
+    
+    // Clear error state before retry
+    setApiError(null);
+    
+    // Retry with the stored request data
+    handleAnswer(lastFailedRequest.userText, true);
+  };
+
+  // Comprehensive cleanup function with proper resource management (Requirement 12.5)
+  const cleanup = () => {
+    console.log('Cleaning up interview resources:', {
+      timestamp: new Date().toISOString(),
+      hasRecognition: !!recognitionRef.current,
+      hasSilenceChecker: !!silenceCheckerRef.current,
+      hasSilenceTimer: !!silenceTimerRef.current
+    });
+    
+    // Stop speech recognition with proper error handling
+    try {
+      if (recognitionRef.current) {
+        // Try abort first (more forceful), then stop
+        if (recognitionRef.current.abort) {
+          recognitionRef.current.abort();
+        }
+        recognitionRef.current.stop();
+        console.log('Speech recognition stopped successfully');
+      }
+    } catch (e) { 
+      console.warn('Error stopping speech recognition during cleanup:', e);
+    }
+    
+    // Cancel all TTS utterances to prevent audio after cleanup
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        console.log('TTS utterances cancelled successfully');
+      }
+    } catch (e) {
+      console.warn('Error cancelling TTS during cleanup:', e);
+    }
+    
+    // Clear all timers and intervals with proper cleanup
+    // This includes silence checker and any other timers
+    try {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        clearInterval(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+        console.log('Silence timer cleared');
+      }
+      
+      if (silenceCheckerRef.current) {
+        clearInterval(silenceCheckerRef.current);
+        silenceCheckerRef.current = null;
+        console.log('Silence checker interval cleared');
+      }
+    } catch (e) {
+      console.warn('Error clearing timers during cleanup:', e);
+    }
+    
+    // Null all references to prevent memory leaks
+    try {
+      recognitionRef.current = null;
+      lastSpokenAtRef.current = null;
+      explicitStopRef.current = false;
+      sessionTranscriptRef.current = "";
+      browserRestartRef.current = 0;
+      console.log('All references nulled successfully');
+    } catch (e) {
+      console.warn('Error nulling references during cleanup:', e);
+    }
+    
+    console.log('Cleanup complete - all resources released');
   };
 
   const endInterview = async (auto = false) => {
     if (interviewEnded) return;
     setInterviewEnded(true);
+    
+    // Call cleanup to release all resources before ending interview (Requirement 12.5)
+    console.log('Ending interview - calling cleanup to release resources');
     cleanup();
 
     const toastId = toast.loading('Saving interview transcript...');
+    
+    // Log interview conclusion (Requirements 11.4, 11.5)
+    console.log('Ending interview:', {
+      auto,
+      messagesCount: messages.length,
+      interviewId: id,
+      timeLeft: Math.max(0, Math.floor(timeLeft / 1000)),
+      lastQuestionAnswered: lastQuestionFlag,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
+      // Save transcript with timeout (15 seconds)
+      const transcriptController = new AbortController();
+      const transcriptTimeout = setTimeout(() => transcriptController.abort(), 15000);
+      
       const transcriptRes = await fetch(`/api/interview/${id}/update-transcript`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages }),
+        signal: transcriptController.signal
       });
 
-      if (!transcriptRes.ok) throw new Error('Failed to save transcript');
+      clearTimeout(transcriptTimeout);
+
+      if (!transcriptRes.ok) {
+        const errorData = await transcriptRes.json().catch(() => ({}));
+        console.error('Failed to save transcript:', {
+          status: transcriptRes.status,
+          errorData,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Provide specific error message based on status
+        let transcriptError = 'Failed to save transcript. ';
+        if (transcriptRes.status === 500) {
+          transcriptError += 'Server error occurred.';
+        } else if (transcriptRes.status === 404) {
+          transcriptError += 'Interview not found.';
+        } else {
+          transcriptError += `Error ${transcriptRes.status}.`;
+        }
+        
+        throw new Error(transcriptError);
+      }
+      
+      // Transcript saved successfully (Requirement 11.4)
+      console.log('Transcript saved successfully to database:', {
+        interviewId: id,
+        messagesCount: messages.length,
+        timestamp: new Date().toISOString()
+      });
 
       toast.loading('Generating interview feedback...', { id: toastId });
+      
+      // Generate feedback with timeout (30 seconds)
+      const feedbackController = new AbortController();
+      const feedbackTimeout = setTimeout(() => feedbackController.abort(), 30000);
+      
       const feedbackRes = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/feedback/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -704,27 +1354,140 @@ export default function Page() {
           question_list: questions,
           interview_type: interview.interviewType
         }),
+        signal: feedbackController.signal
       });
 
-      if (!feedbackRes.ok) throw new Error('Failed to generate feedback');
-      const feedbackData = await feedbackRes.json();
+      clearTimeout(feedbackTimeout);
 
-      await fetch(`/api/interview/${id}/save-feedback`, {
+      if (!feedbackRes.ok) {
+        const errorData = await feedbackRes.json().catch(() => ({}));
+        console.error('Failed to generate feedback:', {
+          status: feedbackRes.status,
+          errorData,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Provide specific error message based on status
+        let feedbackError = 'Failed to generate feedback. ';
+        if (feedbackRes.status === 500) {
+          feedbackError += 'AI service error.';
+        } else if (feedbackRes.status === 503) {
+          feedbackError += 'Service temporarily unavailable.';
+        } else {
+          feedbackError += `Error ${feedbackRes.status}.`;
+        }
+        
+        throw new Error(feedbackError);
+      }
+      
+      const feedbackData = await feedbackRes.json();
+      
+      // Feedback generated successfully (Requirement 11.5)
+      console.log('Feedback generated successfully by Interview Agent:', {
+        interviewId: id,
+        hasFeedback: !!feedbackData.feedback,
+        timestamp: new Date().toISOString()
+      });
+
+      // Save feedback with timeout (15 seconds) (Requirement 11.5)
+      const saveFeedbackController = new AbortController();
+      const saveFeedbackTimeout = setTimeout(() => saveFeedbackController.abort(), 15000);
+      
+      const saveFeedbackRes = await fetch(`/api/interview/${id}/save-feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ feedback: feedbackData.feedback }),
+        signal: saveFeedbackController.signal
       });
-
-      toast.success('Interview completed successfully!', { id: toastId });
+      
+      clearTimeout(saveFeedbackTimeout);
+      
+      if (!saveFeedbackRes.ok) {
+        console.error('Failed to save feedback to database:', {
+          status: saveFeedbackRes.status,
+          timestamp: new Date().toISOString()
+        });
+        // Don't throw - feedback was generated, just not saved
+        toast('Feedback generated but not saved. Check dashboard.', { 
+          id: toastId, 
+          duration: 4000,
+          icon: '⚠️'
+        });
+      } else {
+        // Feedback saved and redirecting to dashboard (Requirement 11.5)
+        console.log('Feedback saved successfully to database:', {
+          interviewId: id,
+          timestamp: new Date().toISOString()
+        });
+        toast.success('Interview completed successfully!', { id: toastId });
+      }
+      
+      // Redirect to dashboard (Requirement 11.5)
+      console.log('Redirecting to dashboard after interview completion');
       setTimeout(() => {
         router.push("/dashboard");
       }, auto ? 3000 : 500);
-    } catch (err) {
-      console.error(err);
-      toast.error('Error completing interview', { id: toastId });
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+    } catch (err: any) {
+      console.error('Error completing interview:', {
+        error: err,
+        message: err.message,
+        name: err.name,
+        interviewId: id,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Enhanced error messages with specific guidance
+      let errorMessage = 'Error completing interview. ';
+      let shouldRedirect = true;
+      
+      if (err.name === 'AbortError') {
+        if (err.message?.includes('transcript')) {
+          errorMessage += 'Transcript save timed out after 15 seconds. Your interview data may not be saved.';
+        } else if (err.message?.includes('feedback')) {
+          errorMessage += 'Feedback generation timed out after 30 seconds. Your transcript was saved.';
+        } else {
+          errorMessage += 'Request timed out. Some data may not be saved.';
+        }
+      } else if (err.message.includes('transcript')) {
+        errorMessage = err.message + ' Your interview data may not be saved. Please contact support.';
+        shouldRedirect = false; // Don't redirect if transcript wasn't saved
+      } else if (err.message.includes('feedback')) {
+        errorMessage = err.message + ' Your transcript was saved. You can check the dashboard.';
+      } else if (err.message.includes('network') || err.message.includes('fetch')) {
+        errorMessage += 'Network error. Please check your connection. Your data may not be saved.';
+      } else {
+        errorMessage += 'An unexpected error occurred. Please check your results in the dashboard.';
+      }
+      
+      toast.error(errorMessage, { id: toastId, duration: 7000 });
+      
+      // Redirect to dashboard if appropriate
+      if (shouldRedirect) {
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 3000);
+      } else {
+        // Offer manual retry for critical failures
+        toast((t) => (
+          <div className="space-y-2">
+            <p className="font-semibold">Critical Error</p>
+            <p className="text-sm">{errorMessage}</p>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                // Reset state and allow user to try ending again
+                setInterviewEnded(false);
+                setEndPending(false);
+              }}
+              className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        ), {
+          duration: 10000,
+        });
+      }
     }
   };
 
@@ -736,6 +1499,20 @@ export default function Page() {
     }, 60);
     return () => clearTimeout(t);
   }, [messages]);
+
+  // Cleanup on page unload/refresh (Requirement 12.5)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('Page unloading - calling cleanup');
+      cleanup();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // Permission pending UI
   if (awaitingPermission || (!microphoneGranted && !apiError)) {
@@ -751,19 +1528,22 @@ export default function Page() {
               Please allow microphone access to start your AI interview.
             </p>
             {browserInfo.isBrave && (
-              <div className="p-4 bg-yellow-900 border border-yellow-700 rounded-lg space-y-2">
+              <div className="p-4 bg-yellow-900 border-2 border-yellow-700 rounded-lg space-y-2 shadow-xl">
                 <p className="text-yellow-200 font-semibold flex items-center gap-2">
                   <AlertCircle className="w-5 h-5" />
-                  Brave Browser Detected
+                  🛡️ Brave Browser Detected
                 </p>
                 <div className="text-yellow-100 text-sm space-y-1 text-left">
-                  <p>Please follow these steps:</p>
+                  <p className="font-medium">Please follow these steps:</p>
                   <ol className="list-decimal list-inside space-y-1 ml-2">
                     <li>Click the Brave Shields icon (🛡️) in the address bar</li>
                     <li>Disable &#34;Shields&#34; for this site</li>
                     <li>Click &#34;Allow&#34; when prompted for microphone access</li>
                     <li>Refresh the page if needed</li>
                   </ol>
+                  <p className="mt-2 text-xs text-yellow-200 italic">
+                    Note: If voice fails, you can always use text input
+                  </p>
                 </div>
               </div>
             )}
@@ -795,8 +1575,8 @@ export default function Page() {
               </div>
               {isMicOn && (
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-                  <div className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full shadow-lg">
-                    <Mic className="w-4 h-4 animate-pulse" />
+                  <div className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full shadow-lg animate-pulse">
+                    <Mic className="w-4 h-4 text-green-600" />
                     <span className="text-sm font-medium">Listening</span>
                   </div>
                 </div>
@@ -804,46 +1584,119 @@ export default function Page() {
             </div>
             
             <div className="text-center space-y-3 max-w-xs">
-              <p className="text-base font-medium text-white">
-                {showManualInput
-                  ? "Type your answer below"
-                  : useFallback
-                  ? "Please type your answer..."
-                  : apiError
-                  ? "System error occurred"
-                  : endPending
-                  ? "Finalizing interview..."
-                  : isMicOn
-                  ? "Speak now..."
-                  : agentThinking
-                  ? "AI is processing your response"
-                  : "Your turn to respond"}
-              </p>
+              {/* Enhanced status message display with appropriate icons */}
+              <div className="flex flex-col items-center gap-2">
+                {showManualInput ? (
+                  <div className="flex items-center gap-2 text-base font-medium text-white">
+                    <Keyboard className="w-5 h-5 text-blue-400" />
+                    <span>Type your answer below</span>
+                  </div>
+                ) : useFallback ? (
+                  <div className="flex items-center gap-2 text-base font-medium text-white">
+                    <Keyboard className="w-5 h-5 text-blue-400" />
+                    <span>Please type your answer...</span>
+                  </div>
+                ) : apiError ? (
+                  <div className="flex items-center gap-2 text-base font-medium text-red-400">
+                    <AlertCircle className="w-5 h-5" />
+                    <span>System error occurred</span>
+                  </div>
+                ) : endPending ? (
+                  <div className="flex items-center gap-2 text-base font-medium text-white">
+                    <Clock className="w-5 h-5 text-blue-400" />
+                    <span>Finalizing interview...</span>
+                  </div>
+                ) : isMicOn ? (
+                  <div className="flex items-center gap-2 text-base font-medium text-white">
+                    <Mic className="w-5 h-5 text-green-400 animate-pulse" />
+                    <span>Speak now...</span>
+                  </div>
+                ) : agentThinking ? (
+                  <div className="flex items-center gap-2 text-base font-medium text-white">
+                    <Spinner className="w-5 h-5 text-blue-400" />
+                    <span>AI is processing your response</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-base font-medium text-white">
+                    <Mic className="w-5 h-5 text-zinc-400" />
+                    <span>Ready to listen</span>
+                  </div>
+                )}
+              </div>
               
-              {browserInfo.isBrave && networkRetryCount > 0 && (
-                <p className="text-sm text-yellow-500">
-                  Brave network retry: {networkRetryCount}/3
-                </p>
+              {/* Network retry counter display with prominent styling */}
+              {networkRetryCount > 0 && networkRetryCount < 3 && (
+                <div className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
+                  <RefreshCw className="w-4 h-4 text-yellow-400 animate-spin" />
+                  <span className="text-sm font-medium text-yellow-200">
+                    Reconnecting... ({networkRetryCount}/3)
+                  </span>
+                </div>
               )}
               
+              {/* Recognition unavailable warning */}
               {!recognitionAvailable && !useFallback && (
-                <p className="text-sm text-yellow-500">
-                  Voice recognition unavailable. Using text input.
-                </p>
+                <div className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-900/30 border border-orange-700/50 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-orange-400" />
+                  <span className="text-sm text-orange-200">
+                    Voice recognition unavailable
+                  </span>
+                </div>
               )}
             </div>
 
+            {/* Retry button for recognition failures - enhanced for Brave */}
             {!recognitionAvailable && !showManualInput && (
               <button
                 onClick={() => {
                   setRecognitionAvailable(true);
                   setNetworkRetryCount(0);
+                  browserRestartRef.current = 0;
                   toast.success('Attempting to re-enable speech recognition');
+                  console.log('Manual retry initiated - counters reset');
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-lg"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry Voice Recognition
+              </button>
+            )}
+            
+            {/* Retry button after network failures - Brave-specific */}
+            {browserInfo.isBrave && networkRetryCount >= 3 && !showManualInput && !isMicOn && (
+              <button
+                onClick={() => {
+                  setNetworkRetryCount(0);
+                  browserRestartRef.current = 0;
+                  setRecognitionAvailable(true);
+                  setUseFallback(false);
+                  toast.success('Retrying voice recognition...', { duration: 2000 });
+                  console.log('Brave retry button clicked - all counters reset');
+                  // Attempt to restart listening
+                  setTimeout(() => {
+                    if (!agentThinking && !isMicOn) {
+                      startListening();
+                    }
+                  }, 500);
+                }}
+                className="flex items-center gap-2 px-5 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors shadow-lg border-2 border-yellow-500"
+              >
+                <RefreshCw className="w-5 h-5" />
+                <span className="font-semibold">Retry Voice (0/3)</span>
+              </button>
+            )}
+            
+            {/* Retry button for failed API requests */}
+            {showRetryButton && lastFailedRequest && !agentThinking && (
+              <button
+                onClick={handleRetryLastRequest}
+                disabled={isRetrying}
+                className="flex items-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors shadow-lg border-2 border-green-500 disabled:border-zinc-600"
+              >
+                <RefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : ''}`} />
+                <span className="font-semibold">
+                  {isRetrying ? 'Retrying...' : `Retry Last Request ${apiRetryCount > 0 ? `(${apiRetryCount}/3)` : ''}`}
+                </span>
               </button>
             )}
             
@@ -856,17 +1709,71 @@ export default function Page() {
                 Type Answer Instead
               </button>
             )}
+            
+            {/* Manual completion option when API errors persist */}
+            {apiError && apiRetryCount >= 2 && !agentThinking && (
+              <button
+                onClick={() => {
+                  toast((t) => (
+                    <div className="space-y-3">
+                      <p className="font-semibold">Complete Interview Manually?</p>
+                      <p className="text-sm">The interview service is experiencing issues. You can:</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            toast.dismiss(t.id);
+                            endInterview(false);
+                          }}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm font-medium"
+                        >
+                          End Interview Now
+                        </button>
+                        <button
+                          onClick={() => {
+                            toast.dismiss(t.id);
+                            setShowManualInput(true);
+                            setApiError(null);
+                            setShowRetryButton(false);
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium"
+                        >
+                          Continue with Text
+                        </button>
+                      </div>
+                    </div>
+                  ), {
+                    duration: 10000,
+                  });
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors border border-orange-500"
+              >
+                <AlertCircle className="w-4 h-4" />
+                Manual Completion Options
+              </button>
+            )}
           </div>
 
           <div className="w-full space-y-6">
-            <div className="flex items-center justify-center gap-3 px-6 py-4 bg-zinc-900 rounded-xl border border-zinc-800">
-              <Clock className="w-5 h-5 text-zinc-400" />
+            <div className={`flex items-center justify-center gap-3 px-6 py-4 rounded-xl border transition-all duration-300 ${
+              timeLeft <= 120000 
+                ? 'bg-red-900/30 border-red-700/50 shadow-lg shadow-red-500/20' 
+                : 'bg-zinc-900 border-zinc-800'
+            }`}>
+              <Clock className={`w-5 h-5 transition-colors ${
+                timeLeft <= 120000 ? 'text-red-400' : 'text-zinc-400'
+              }`} />
               <div className="text-center">
-                <div className="text-2xl font-bold tracking-tight">
+                <div className={`text-2xl font-bold tracking-tight transition-colors ${
+                  timeLeft <= 120000 ? 'text-red-400' : 'text-white'
+                }`}>
                   {String(Math.max(0, Math.floor(timeLeft / 60000))).padStart(1, '0')}:
                   {String(Math.max(0, Math.floor((timeLeft % 60000) / 1000))).padStart(2, '0')}
                 </div>
-                <div className="text-xs text-zinc-500 mt-0.5">Time Remaining</div>
+                <div className={`text-xs mt-0.5 transition-colors ${
+                  timeLeft <= 120000 ? 'text-red-300' : 'text-zinc-500'
+                }`}>
+                  {timeLeft <= 120000 ? 'Time Running Low!' : 'Time Remaining'}
+                </div>
               </div>
             </div>
             
@@ -885,83 +1792,135 @@ export default function Page() {
           <div className="border-b border-zinc-800 px-8 py-6 bg-zinc-950">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-full bg-white flex items-center justify-center transition-all duration-300 ${
+                  agentThinking ? 'animate-pulse shadow-lg shadow-blue-500/50' : ''
+                }`}>
                   <Bot className="w-6 h-6 text-black" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold">AI Interviewer</h2>
-                  <p className="text-xs text-zinc-500">Powered by advanced AI technology</p>
+                  <p className="text-xs text-zinc-500">
+                    {agentThinking ? 'Processing your response...' : 'Powered by advanced AI technology'}
+                  </p>
                 </div>
               </div>
               {browserInfo.isBrave && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-900/30 border border-yellow-700/50 rounded-full">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  <span className="text-xs text-yellow-200">Brave Browser</span>
+                <div 
+                  className="flex items-center gap-2 px-3 py-1.5 bg-yellow-900/40 border border-yellow-600/60 rounded-full shadow-lg cursor-help"
+                  title="Brave browser detected. Voice recognition may require Shields to be disabled."
+                >
+                  <AlertCircle className="w-4 h-4 text-yellow-400" />
+                  <span className="text-xs font-medium text-yellow-200">🛡️ Brave Browser</span>
                 </div>
               )}
             </div>
           </div>
           
           <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {messages.map((msg, idx) => {
                 const isLast = idx === messages.length - 1;
+                const isAI = msg.role === "interviewer";
+                
                 return (
                   <motion.div
                     key={idx}
                     layout
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.16 }}
-                    className={`flex ${msg.role === "candidate" ? "justify-end" : "justify-start"}`}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ 
+                      duration: 0.3,
+                      ease: [0.4, 0.0, 0.2, 1],
+                      layout: { duration: 0.2 }
+                    }}
+                    className={`flex ${isAI ? "justify-start" : "justify-end"}`}
                     ref={isLast ? lastMessageRef : undefined}
                   >
-                    <motion.div layout className={`max-w-[75%] rounded-2xl px-6 py-4 shadow-lg ${
-                      msg.role === "interviewer"
-                        ? "bg-white text-black"
-                        : "bg-zinc-800 text-white border border-zinc-700"
-                    }`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        {msg.role === "interviewer" ? (
-                          <Bot className="w-4 h-4" />
-                        ) : (
-                          <User className="w-4 h-4" />
-                        )}
-                        <span className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                          {msg.role === "interviewer" ? "AI Interviewer" : "You"}
+                    <motion.div 
+                      layout
+                      className={`max-w-[75%] rounded-2xl px-6 py-4 shadow-lg transition-all duration-200 ${
+                        isAI
+                          ? "bg-white text-black hover:shadow-xl"
+                          : "bg-zinc-900 text-white border-2 border-zinc-700 hover:border-zinc-600 hover:shadow-xl"
+                      }`}
+                    >
+                      {/* Role indicator with icon */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          isAI ? "bg-black" : "bg-white"
+                        }`}>
+                          {isAI ? (
+                            <Bot className={`w-4 h-4 ${isAI ? "text-white" : "text-black"}`} />
+                          ) : (
+                            <User className={`w-4 h-4 ${isAI ? "text-white" : "text-black"}`} />
+                          )}
+                        </div>
+                        <span className={`text-xs font-bold uppercase tracking-wider ${
+                          isAI ? "text-black/70" : "text-white/70"
+                        }`}>
+                          {isAI ? "AI Interviewer" : "You"}
                         </span>
                       </div>
-                      <p className="text-sm leading-relaxed">{msg.content}</p>
+                      
+                      {/* Message content */}
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.1, duration: 0.2 }}
+                        className="text-sm leading-relaxed whitespace-pre-wrap"
+                      >
+                        {msg.content}
+                      </motion.p>
                     </motion.div>
                   </motion.div>
                 );
               })}
             </AnimatePresence>
             
+            {/* API Error Display with enhanced information */}
             {apiError && (
-              <div className="flex justify-center">
-                <div className="bg-red-950 border border-red-800 text-red-200 px-6 py-3 rounded-xl text-sm">
-                  {apiError}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex justify-center"
+              >
+                <div className="bg-red-950 border-2 border-red-800 text-red-200 px-6 py-4 rounded-xl text-sm shadow-lg max-w-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    <span className="font-semibold text-base">API Error</span>
+                  </div>
+                  <p className="mb-3">{apiError}</p>
+                  {showRetryButton && (
+                    <div className="text-xs text-red-300 bg-red-900/50 px-3 py-2 rounded border border-red-700">
+                      <p className="font-medium mb-1">What you can do:</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        <li>Click &#34;Retry Last Request&#34; to try again</li>
+                        <li>Use &#34;Type Answer Instead&#34; to continue with text</li>
+                        {apiRetryCount >= 2 && <li>Click &#34;Manual Completion Options&#34; to end or continue</li>}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
 
           {/* Manual Input Area */}
           {showManualInput && (
-            <div className="border-t border-zinc-800 p-6 bg-zinc-900">
+            <div className="border-t border-zinc-800 p-6 bg-zinc-900 shadow-lg">
               <div className="max-w-4xl mx-auto space-y-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <Keyboard className="w-4 h-4" />
-                  <span>Type your answer below and press Send</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-900/30 border border-blue-700/50 rounded-lg">
+                  <Keyboard className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-medium text-blue-200">Type your answer below and press Send (or Enter)</span>
                 </div>
                 <div className="flex gap-3">
                   <textarea
                     value={manualInputText}
                     onChange={(e) => setManualInputText(e.target.value)}
                     placeholder="Type your answer here..."
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 resize-none"
+                    className="flex-1 bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all"
                     rows={3}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -969,11 +1928,12 @@ export default function Page() {
                         handleManualSubmit();
                       }
                     }}
+                    autoFocus
                   />
                   <button
                     onClick={handleManualSubmit}
                     disabled={!manualInputText.trim()}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-xl font-medium transition-colors"
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-xl font-medium transition-all shadow-lg hover:shadow-xl disabled:shadow-none"
                   >
                     Send
                   </button>
