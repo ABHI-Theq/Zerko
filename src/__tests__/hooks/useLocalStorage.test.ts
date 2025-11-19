@@ -151,7 +151,7 @@ describe('useLocalStorage Hook', () => {
       
       act(() => {
         const [, setValue] = result.current;
-        setValue("");
+        setValue(null);
       });
 
       const [storedValue] = result.current;
