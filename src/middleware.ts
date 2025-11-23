@@ -1,59 +1,41 @@
+// middleware.ts
+import { auth } from "@/lib/auth";
 import { NextResponse, NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 import {
-  apiAuthPrefix,
+  publicRoutes,
   authRoutes,
   DEFAULT_LOGIN_REDIRECT,
-  publicRoutes,
 } from "@/route_util";
 
-export default async function middleware(req: NextRequest) {
-  const { nextUrl } = req;
+export default auth((req) => {
+  // req is AuthRequest, so cast it to NextRequest to access nextUrl & url
+  const request = req as unknown as NextRequest;
 
-  // 🔐 Get session token (edge-safe, does NOT use Prisma)
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET,
-  });
+  const isLoggedIn = !!req.auth;
+  const { pathname } = request.nextUrl;
 
-  const isLoggedIn = !!token;
+  const isPublic = publicRoutes.includes(pathname);
+  const isAuthPage = authRoutes.includes(pathname);
 
-  const pathname = nextUrl.pathname;
-
-  const isApiAuthRoute = pathname.startsWith(apiAuthPrefix);
-  const isPublicRoute = publicRoutes.includes(pathname);
-  const isAuthRoute = authRoutes.includes(pathname);
-
-  // Allow NextAuth API routes (signin, callback, etc)
-  if (isApiAuthRoute) {
-    return NextResponse.next();
+  // If user is logged in and tries to access login/signup
+  if (isLoggedIn && isAuthPage) {
+    return NextResponse.redirect(
+      new URL(DEFAULT_LOGIN_REDIRECT, request.url)
+    );
   }
 
-  // If visiting auth pages (sign-in, sign-up)
-  if (isAuthRoute) {
-    if (isLoggedIn) {
-      return NextResponse.redirect(
-        new URL(DEFAULT_LOGIN_REDIRECT, nextUrl)
-      );
-    }
-    return NextResponse.next();
-  }
-
-  // 🔒 Protected routes
-  if (!isPublicRoute && !isLoggedIn) {
-    const signInUrl = new URL("/auth/sign-in", nextUrl);
-    signInUrl.searchParams.set("callbackUrl", nextUrl.pathname);
-    return NextResponse.redirect(signInUrl);
+  // If user is NOT logged in and tries to access protected route
+  if (!isLoggedIn && !isPublic) {
+    const loginUrl = new URL("/auth/sign-in", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
-}
+});
 
+// Recommended matcher
 export const config = {
-  matcher: [
-    "/((?!.+\\.[\\w]+$|_next).*)",
-    "/",
-    "/(api|trpc)(.*)",
-  ],
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
 };
