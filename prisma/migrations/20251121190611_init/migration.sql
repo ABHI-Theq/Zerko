@@ -48,9 +48,13 @@ CREATE TABLE "Interview" (
     "startedAt" TIMESTAMP(3),
     "endedAt" TIMESTAMP(3),
     "transcript" JSONB,
-    "feedbackreport" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "feedbackGenerated" BOOLEAN NOT NULL DEFAULT false,
+    "feedbackStr" TEXT,
+    "improvements" TEXT[],
+    "overall_rating" INTEGER,
+    "strengths" TEXT[],
 
     CONSTRAINT "Interview_pkey" PRIMARY KEY ("id")
 );

@@ -19,13 +19,10 @@ export const authConfig={
         },
       },
       authorize: async (credentials) => {
-        let user = null;
-        
-
         const {email,password}=await userSigninSchema.parseAsync(credentials);
 
       
-        user = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
 

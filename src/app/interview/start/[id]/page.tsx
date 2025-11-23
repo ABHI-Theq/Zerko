@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Bot, User, PhoneOff, Mic, Clock, MicOff, RefreshCw, AlertCircle, Keyboard } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useInterviewCon } from "@/context/InterviewContext";
+import { useInterviewConAll } from "@/context/InterviewAllContext";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import ReloadGuard from "@/components/Reload";
@@ -191,6 +192,7 @@ class SpeechRecognitionManager {
 
 export default function Page() {
   const { interview } = useInterviewCon();
+  const { refetchInterviews } = useInterviewConAll();
   const router = useRouter();
   const params = useParams();
   const id = params.id;
@@ -1424,6 +1426,11 @@ export default function Page() {
       
       // Redirect to dashboard (Requirement 11.5)
       console.log('Redirecting to dashboard after interview completion');
+      
+      // Refetch all interviews to update the dashboard with the newly completed interview
+      await refetchInterviews();
+      console.log('All interviews refetched successfully');
+      
       setTimeout(() => {
         router.push("/dashboard");
       }, auto ? 3000 : 500);
@@ -1463,6 +1470,11 @@ export default function Page() {
       
       // Redirect to dashboard if appropriate
       if (shouldRedirect) {
+        // Refetch all interviews before redirecting
+        await refetchInterviews().catch(err => {
+          console.error('Failed to refetch interviews:', err);
+        });
+        
         setTimeout(() => {
           router.push("/dashboard");
         }, 3000);

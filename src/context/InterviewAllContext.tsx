@@ -16,6 +16,7 @@ interface InterviewContextType {
   loading: boolean;
   setLoading: Dispatch<SetStateAction<boolean>>;
   setInterviews: Dispatch<SetStateAction<InterviewDetsForAPI[]>>;
+  refetchInterviews: () => Promise<void>;
 }
 
 const InterviewAllContext = createContext<InterviewContextType | null>(null);
@@ -26,35 +27,40 @@ export const InterviewAllProvider = ({ children }: { children: React.ReactNode }
   const { data: session, status } = useSession();
   const hasFetchedRef = useRef(false);
 
+  const fetchInterviews = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/interview/all`);
+      const data = await res.json();
+
+      if (data?.error) {
+        console.error(data.error);
+        return;
+      }
+
+      setInterviews(data.interviews || []);
+      hasFetchedRef.current = true;  // Mark as fetched
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "Fetch error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refetchInterviews = async () => {
+    console.log('Refetching all interviews...');
+    await fetchInterviews();
+  };
+
   useEffect(() => {
     // Only fetch if authenticated and haven't fetched before
     if (status !== "authenticated" || !session || hasFetchedRef.current) return;
-
-    const fetchInterviews = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/interview/all`);
-        const data = await res.json();
-
-        if (data?.error) {
-          console.error(data.error);
-          return;
-        }
-
-        setInterviews(data.interviews || []);
-        hasFetchedRef.current = true;  // Mark as fetched
-      } catch (error) {
-        console.error(error instanceof Error ? error.message : "Fetch error");
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchInterviews();
   }, [status, session?.user?.email,session]); // Only depend on email to prevent unnecessary re-renders
 
   return (
-    <InterviewAllContext.Provider value={{ interviews, setInterviews, loading, setLoading }}>
+    <InterviewAllContext.Provider value={{ interviews, setInterviews, loading, setLoading, refetchInterviews }}>
       {children}
     </InterviewAllContext.Provider>
   );
