@@ -6,6 +6,7 @@ import "./globals.css";
 import { InterviewProvider } from "@/context/InterviewContext";
 import { Suspense } from "react";
 import { InterviewAllProvider } from "@/context/InterviewAllContext";
+import {SpeedInsights} from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,7 +55,8 @@ export default function RootLayout({
             </SessionProvider>
           </div>
         </Suspense>
-        <Analytics />
+        <SpeedInsights/>
+
       </body>
     </html>
   );

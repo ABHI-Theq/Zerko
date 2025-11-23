@@ -6,17 +6,17 @@ import { revalidatePath } from "next/cache"
 import toast from "react-hot-toast"
 
 export const  signInWithCredential=async(data:{email:string,password:string})=>{
-    await signIn("credentials",{...data,redirect:false})
-       revalidatePath('/')
+    await signIn("credentials",{...data,redirectTo:"/dashboard"})
+       revalidatePath('/dashboard')
               }
 export const signInWithGithub=async()=>{
-    await signIn("github",{redirectTo:"/"})
-       revalidatePath('/')
+    await signIn("github",{redirectTo:"/dashboard"})
+       revalidatePath('/dashboard')
               }
 
 export const signInWithGoogle=async()=>{
-    await signIn("google",{redirectTo:"/"})
-       revalidatePath('/')
+    await signIn("google",{redirectTo:"/dashboard"})
+       revalidatePath('/dashboard')
               }
 
 export const signOutAuth=async()=>{
