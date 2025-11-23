@@ -1507,8 +1507,8 @@ export default function Page() {
   useEffect(() => {
     if (messages.length === 0) return;
     const t = setTimeout(() => {
-      lastMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
+      lastMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 100);
     return () => clearTimeout(t);
   }, [messages]);
 
