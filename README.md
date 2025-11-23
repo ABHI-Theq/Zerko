@@ -69,11 +69,14 @@ Traditional interviews are time-consuming, inconsistent, and often biased. Zerko
 
 ### 🛡️ Brave Browser Support
 
+> **Note**: Due to limitations with the Web Speech Recognition API in Brave browser, voice interviews currently use text input as the primary method. We are actively working on resolving this issue. Voice interviews work perfectly on Chrome, Firefox, Safari, and Edge browsers.
+
 - **Async Detection**: Multiple fallback methods for reliable identification
 - **Shield Warnings**: Proactive notifications about Brave-specific setup
-- **Extended Thresholds**: 10-second silence detection for stability
+- **Text Input Fallback**: Seamless text-based interview experience on Brave
 - **Network Retry Logic**: Optimized for Brave's privacy features
 - **Visual Indicators**: Clear feedback about browser-specific behavior
+- **Future Enhancement**: Full voice support for Brave browser coming soon
 
 ### 🤖 AI-Powered Intelligence
 
@@ -743,12 +746,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 When reporting bugs, please include:
 
-1. Browser name and version
+1. Browser name and version (Note: Voice interviews on Brave browser currently use text input)
 2. Operating system
 3. Steps to reproduce
 4. Expected vs actual behavior
 5. Screenshots (if applicable)
 6. Console errors (F12 → Console)
+
+**Known Issues:**
+- Brave Browser: Voice recognition currently defaults to text input due to Speech Recognition API limitations. This is being actively worked on.
 
 ### Feature Requests
 
@@ -778,13 +784,15 @@ We love feature requests! Please:
 ## 🗺️ Roadmap
 
 ### Current Version (v1.0)
-- ✅ Voice interview system
+- ✅ Voice interview system (Chrome, Firefox, Safari, Edge)
+- ✅ Text input fallback for Brave browser
 - ✅ AI question generation
 - ✅ Feedback system
 - ✅ Cross-browser support
 - ✅ Brave browser optimization
 
 ### Upcoming Features (v1.1)
+- 🔄 Full voice support for Brave browser (in progress)
 - 🔄 WebRTC integration for better audio
 - 🔄 Mobile app (iOS and Android)
 - 🔄 Multi-language support
