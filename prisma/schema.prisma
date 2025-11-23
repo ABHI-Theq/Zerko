@@ -1,13 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  
 }
 
 datasource db {
   provider = "postgresql"
-  url=env("DATABASE_URL")
-
-  
+  url = env("DATABASE_URL")
 }
 
 model User {
@@ -19,6 +16,7 @@ model User {
   last_signed_at DateTime?
   accounts       Account[]
   interviews     Interview[]
+  sessions       Session[]  
 }
 
 model Account {
@@ -60,6 +58,14 @@ model Interview {
   overall_rating    Int?
   strengths         String[]
   user              User            @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum InterviewType {

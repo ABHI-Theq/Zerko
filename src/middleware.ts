@@ -1,4 +1,4 @@
-// middleware.ts
+export const runtime="nodejs"
 import { auth } from "@/lib/auth";
 import { NextResponse, NextRequest } from "next/server";
 
@@ -35,7 +35,10 @@ export default auth((req) => {
   return NextResponse.next();
 });
 
-// Recommended matcher
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!(?:_next|static|public|.*\\..*|favicon.ico|api/auth)).*)",
+  ],
+  runtime: "nodejs",
 };
+
