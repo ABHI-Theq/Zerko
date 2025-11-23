@@ -36,6 +36,8 @@ const ParsingResume: React.FC<ParsingResumeProps> = ({ open, onClose, resumeUrl,
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error parsing resume";
       toast.error(msg);
+      console.log();
+      
       console.error("❌ Resume parsing error:", msg);
       onClose();
     } finally {

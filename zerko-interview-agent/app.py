@@ -5,7 +5,8 @@ from typing import List, Dict, Literal, Annotated, Optional
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
-
+from dotenv import load_dotenv
+load_dotenv()
 from Question_generator_agent import get_questions, parse_Resume
 from AI_interview_agent import interview_agent_auto_number as interview_agent_fn
 from FeedBackReportAgent import feedbackReport_agent
@@ -17,7 +18,7 @@ app = FastAPI(title="AI Interview Agent API")
 
 # CORS
 # Build origins list and filter out falsy values; keep wildcard only if explicitly set
-raw_origins = [os.getenv("CORS_ORIGIN"), "http://localhost:8080"]
+raw_origins = [os.getenv("CORS_ORIGIN")]
 frontend_origin = os.getenv("NEXT_PUBLIC_URL")
 if frontend_origin:
     raw_origins.append(frontend_origin)
