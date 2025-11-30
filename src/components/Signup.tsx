@@ -67,6 +67,8 @@ export default function Signup() {
 
     };
 
+
+    
     return (
         <div className="relative shadow-input mx-auto w-full max-w-md rounded-2xl bg-black p-8 text-white">
             <h2 className="text-xl font-bold text-neutral-100">Welcome to Zerko</h2>
