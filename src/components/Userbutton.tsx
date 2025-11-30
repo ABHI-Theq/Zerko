@@ -5,18 +5,16 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Session } from 'next-auth';
 import { signOutAuth } from '@/features/actions';
 import { HelpCircle, LogOut, Settings2, User } from 'lucide-react';
+
 const Userbutton = ({
   session,
   showDetails = false
@@ -48,14 +46,16 @@ const Userbutton = ({
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
 
                     <DropdownMenuGroup>
-                      <DropdownMenuItem>Profile
-                                                <DropdownMenuShortcut><User className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
-                      </DropdownMenuItem>
+                      <Link href="/profile">
+                        <DropdownMenuItem>Profile
+                          <DropdownMenuShortcut><User className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuItem>Settings
-                                                <DropdownMenuShortcut><Settings2 className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
+                        <DropdownMenuShortcut><Settings2 className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem>Help
-                                                <DropdownMenuShortcut><HelpCircle className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
+                        <DropdownMenuShortcut><HelpCircle className="mr-2 h-4 w-4" /></DropdownMenuShortcut>
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator/>
