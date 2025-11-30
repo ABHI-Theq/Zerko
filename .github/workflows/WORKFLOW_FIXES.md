@@ -56,7 +56,7 @@
 
 ### Test Job
 ✅ Checkout code
-✅ Setup pnpm (v8)
+✅ Setup pnpm (v9)
 ✅ Setup Node.js (20.x with cache)
 ✅ Install dependencies (frozen lockfile)
 ✅ Generate Prisma client
@@ -69,7 +69,7 @@
 ### Build Job
 ✅ Runs after test job passes
 ✅ Checkout code
-✅ Setup pnpm (v8)
+✅ Setup pnpm (v9)
 ✅ Setup Node.js (20.x with cache)
 ✅ Install dependencies (frozen lockfile)
 ✅ Generate Prisma client
