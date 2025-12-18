@@ -22,11 +22,18 @@ db=Prisma()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await db.connect()
-    logging.info("Connected to DB")
+    try:
+        await db.connect()
+        logging.info("Connected to DB")
+    except Exception as e:
+        logging.warning(f"Could not connect to DB: {e}")
+        logging.info("Running without database connection")
     yield
-    await db.disconnect()
-    logging.info("Disconnected to DB")
+    try:
+        await db.disconnect()
+        logging.info("Disconnected from DB")
+    except Exception as e:
+        logging.warning(f"Error disconnecting from DB: {e}")
 
 app = FastAPI(title="AI Interview Agent API",lifespan=lifespan)
 
