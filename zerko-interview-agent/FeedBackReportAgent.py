@@ -82,7 +82,7 @@ def feedbackReport_agent(
 
 
     # Configurable model/temperature via env vars or args
-    model_name = os.getenv("FEEDBACK_MODEL", model_name or "gemini-2.5-pro")
+    model_name = os.getenv("FEEDBACK_MODEL", model_name or "gemini-3-pro")
     try:
         temperature = float(os.getenv("FEEDBACK_TEMP", temperature))
     except (TypeError, ValueError):

@@ -18,8 +18,8 @@ const Dashboard = () => {
   }
 }, [session?.user?.name, setInterview,session?.user]);
   return (
-        <div className='relative flex items-start justify-center flex-col gap-6 p-6 w-full'>
-      <div className="flex items-start bg-gradient-to-br from-white to-gray-50 shadow-sm border border-gray-300 justify-center  p-6 gap-3 rounded-xl w-full">
+        <div className='relative flex items-start justify-center flex-col gap-6 p-6 w-full z-10'>
+      <div className="flex items-start bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200 justify-center p-6 gap-3 rounded-xl w-full">
         <div className="flex-1">
           <p className='text-2xl font-bold text-gray-900 mb-1'>Welcome back, {session?.user?.name?.split(' ')[0]}!</p>
           <p className='text-sm text-gray-600'>Ready to ace your next interview? Keep practicing to stay sharp.</p>

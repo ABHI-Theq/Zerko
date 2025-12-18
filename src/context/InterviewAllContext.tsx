@@ -9,15 +9,9 @@ import {
   useRef
 } from "react";
 import { useSession } from "next-auth/react";
-import { InterviewDetsForAPI } from "../types";
+import { InterviewContextType, InterviewDetsForAPI } from "../types";
 
-interface InterviewContextType {
-  interviews: InterviewDetsForAPI[];
-  loading: boolean;
-  setLoading: Dispatch<SetStateAction<boolean>>;
-  setInterviews: Dispatch<SetStateAction<InterviewDetsForAPI[]>>;
-  refetchInterviews: () => Promise<void>;
-}
+
 
 const InterviewAllContext = createContext<InterviewContextType | null>(null);
 

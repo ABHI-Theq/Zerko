@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Account {
+  id                String  @id @db.Uuid
+  userId            String  @db.Uuid
+  provider          String
+  providerAccountId String
+  type              String
+  refresh_token     String
+  access_token      String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  User              User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Interview {
+  id                String          @id @db.Uuid
+  userId            String          @db.Uuid
+  post              String
+  jobDescription    String
+  resume            String?
+  interviewType     InterviewType   @default(TECHNICAL)
+  duration          Int
+  questions         Json?
+  status            InterviewStatus @default(STARTED)
+  startedAt         DateTime?
+  endedAt           DateTime?
+  transcript        Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime
+  feedbackGenerated Boolean         @default(false)
+  feedbackStr       String?
+  improvements      String[]
+  overall_rating    Int?
+  strengths         String[]
+  User              User            @relation(fields: [userId], references: [id])
+}
+
+model ResumeAnalysis {
+  id             String         @id @db.Uuid
+  userId         String         @db.Uuid
+  cloudinaryUrl  String
+  jobDescription String
+  resumeText     String?
+  analysisResult Json?
+  totalScore     Int
+  status         AnalysisStatus @default(UPLOADED)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  title          String
+  User           User           @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id             String           @id @db.Uuid
+  email          String           @unique
+  name           String
+  image          String?
+  password       String?
+  last_signed_at DateTime?
+  Account        Account[]
+  Interview      Interview[]
+  ResumeAnalysis ResumeAnalysis[]
+  Session        Session[]
+}
+
+enum AnalysisStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum InterviewStatus {
+  STARTED
+  RUNNING
+  ENDED
+}
+
+enum InterviewType {
+  TECHNICAL
+  BEHAVIORAL
+  SYSTEM_DESIGN
+  HR
+}

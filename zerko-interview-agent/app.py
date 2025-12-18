@@ -1,20 +1,34 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import List, Dict, Literal, Annotated, Optional
 from fastapi.middleware.cors import CORSMiddleware
+from prisma import Prisma
 import os
 import logging
+import time
 from dotenv import load_dotenv
 load_dotenv()
 from Question_generator_agent import get_questions, parse_Resume
 from AI_interview_agent import interview_agent_auto_number as interview_agent_fn
 from FeedBackReportAgent import feedbackReport_agent
+from service import process_resume_analysis
+from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Interview Agent API")
+db=Prisma()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db.connect()
+    logging.info("Connected to DB")
+    yield
+    await db.disconnect()
+    logging.info("Disconnected to DB")
+
+app = FastAPI(title="AI Interview Agent API",lifespan=lifespan)
 
 # CORS
 # Build origins list and filter out falsy values; keep wildcard only if explicitly set
@@ -77,6 +91,14 @@ class InterviewRequest(BaseModel):
 
 class ParseResume(BaseModel):
     resumeUrl: Annotated[str, Field(description="URL of the resume to be parsed")]
+
+class ResumeAnalysisRequest(BaseModel):
+    resumeId: Annotated[str,Field(description="Id of the resume for analysis")]
+    fileUrl: Annotated[str,Field(description="URL of the resume file")]
+    JobDescription: Annotated[str,Field(description="Details about the Job Role")]
+
+
+
 
 # ----------------------------
 # Healthcheck
@@ -191,6 +213,45 @@ async def generate_interview_feedback(interview_id: str, req: FeedBackReportRequ
                 parsed.get("overall_rating") if parsed else "N/A")
 
     return response_payload
+
+# ----------------------------
+# ANALYSIS ROUTE (ASYNC)
+# ----------------------------
+@app.post("/api/analysis")
+async def analyze(req: ResumeAnalysisRequest, background_tasks: BackgroundTasks):
+    """
+    Receives request -> Starts Background Task -> Returns Immediately.
+    """
+    request_id = f"py_req_{int(time.time())}_{req.resumeId[:8]}"
+    logger.info(f"🚀 [PYTHON_API] {request_id} - Analysis request received")
+    logger.info(f"📋 [PYTHON_API] {request_id} - Request details: resumeId={req.resumeId}, fileUrl={req.fileUrl[:50]}..., jobDescLength={len(req.JobDescription)}")
+    
+    if not req.resumeId or not req.fileUrl:
+        logger.error(f"❌ [PYTHON_API] {request_id} - Missing required fields: resumeId={bool(req.resumeId)}, fileUrl={bool(req.fileUrl)}")
+        raise HTTPException(status_code=400, detail="Missing resumeId or fileUrl")
+
+    # Fire and Forget
+    fileUrl = req.fileUrl.replace("/upload/f_jpg/", "/upload/")
+    logger.info(f"🔄 [PYTHON_API] {request_id} - Modified fileUrl: {fileUrl}")
+    logger.info(f"🔥 [PYTHON_API] {request_id} - Adding background task for processing")
+    
+    background_tasks.add_task(
+        process_resume_analysis,
+        req.resumeId,
+        fileUrl,
+        req.JobDescription
+    )
+
+    response = {
+        "success": True,
+        "message": "Analysis started in background",
+        "resumeId": req.resumeId,
+        "status": "PROCESSING"
+    }
+    logger.info(f"✅ [PYTHON_API] {request_id} - Returning immediate response: {response}")
+    return response
+
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))

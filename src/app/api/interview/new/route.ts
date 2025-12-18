@@ -5,6 +5,7 @@ import { InterviewCreationSchema, InterviewType } from "@/types";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
+import {v4 as uuidv4} from "uuid"
 
 interface CloudinaryResponse {
   public_id: string;
@@ -125,6 +126,7 @@ export async function POST(req: Request) {
 
     const newInterview = await prisma.interview.create({
       data: {
+        id:uuidv4(), 
         userId,
         post: post,
         jobDescription: jobDescription,
@@ -132,6 +134,7 @@ export async function POST(req: Request) {
         startedAt: new Date(Date.now()+5.5*60*60*1000),
         resume: resumeUrl,
         duration: Number(duration),
+        updatedAt: new Date()
       },
     });
 

@@ -1,97 +1,44 @@
 "use client"
+import ResumeDialog from '@/components/ResumeDialog'
+import ResumesAnalysisComponent from '@/components/Resumes-board'
+import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { InterviewDetails } from '@/types'
 import { useSession } from 'next-auth/react'
-import Image from 'next/image'
-import React, { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
+import { useResumeConAll } from '@/context/ResumeAllContext'
+import React, { useState } from 'react'
 
 const Page = () => {
-    const {data:session,status}=useSession()
-    const [resumes, setResumes] = useState<string[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-        useEffect(() => {
-    
-            (async () => {
-                setLoading(true)
-                try {
-                    "use server"
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/interview/all`,
-                        {
-                            method: "GET",
-                            headers: {
-                                "content-type": "Application/Json"
-                            }
-                        }
-                    )
-                    const data = await res.json();
-                    if (data.error) {
-                        toast.error(data.error)
-                        return;
-                    }
-                    const rsl=data.interviews.map((obj:any)=>obj.resume)
-                    console.log(rsl);
-                    
-                    setResumes(rsl)
-                } catch (error) {
-                    const errMsg = error instanceof Error ? error.message : "Error while fetching interviews"
-                    toast.error(errMsg);
-    
-                } finally {
-                    setLoading(false);
-                }
-            })()
-        }, [])
-
- 
-    if (loading) {
-        return (
-            <div className="relative flex items-center justify-center min-h-[65vh] w-full">
-               <Spinner className='w-20 h-20 '/>
-            </div>
-        )
-    }
+    const { data: session } = useSession()
+    const { resumesAnalysis } = useResumeConAll()
+    const [resumeDialogOpen, setResumeDialogOpen] = useState<boolean>(false);
 
   return (
-    <>
-                <div className='relative flex items-start justify-center flex-col gap-4 p-2 w-full'>
-      <div className="flex items-start bg-white shadow-lg justify-center p-4 gap-2 flex-col  rounded-lg w-full ">
-      <p className='text-3xl text-black '>Welcome back {session?.user?.name}</p>
-      <p className='text-sm text-black '>Time to get back on the practice of Interviews for The Big 4</p>
+    <div className='relative flex items-start justify-center flex-col gap-6 p-6 w-full z-10'>
+      <div className="flex items-start bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200 justify-center p-6 gap-3 rounded-xl w-full">
+        <div className="flex-1">
+          <p className='text-2xl font-bold text-gray-900 mb-1'>Welcome back, {session?.user?.name?.split(' ')[0]}!</p>
+          <p className='text-sm text-gray-600'>Get perfectly evaluated scores for your resume and suggestions to upgrade it</p>
+        </div>
+        <div className="flex mt-2 items-center justify-center">
+          <Button
+            onClick={() => setResumeDialogOpen(true)}
+            className='bg-gray-900 hover:bg-gray-800 text-white px-6 h-11 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md'
+          >
+            Evaluate Your Resume
+          </Button>
+        </div>
       </div>
-      <div className='mt-5  w-full'>
-      <h2 className='text-2xl font-medium font-serif'>Resumes</h2>
-      <hr className="w-full border-t-1 border-t-black"/>
-      <div className=" m-4 flex  wrap items-center justify-start gap-4">
-        
-        {
-            resumes?(
-                
-        resumes.map((resume,index)=>(
-            <div key={index} className="">
-              <Image
-            src={resume}
-            alt="error"
-            width={400}
-            height={400}
-            onClick={()=>{
-                window.open(resume,"_blank")
-            }}
-            className='cursor-pointer rounded-xl'
-           />
-            </div>
-        ))
-        
-            ):(
-                 <div className="flex items-center justify-center text-2xl text-orange-600">
-                        No Interviews Found
-                    </div>
-            )
-        }
+
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className='text-xl font-bold text-gray-900'>Your Resume Evaluations</h2>
+          <p className='text-sm text-gray-500'>{resumesAnalysis?.length || 0} total</p>
+        </div>
+        <ResumesAnalysisComponent />
       </div>
-      </div>
+
+      <ResumeDialog open={resumeDialogOpen} onOpenChange={setResumeDialogOpen} />
     </div>
-    </>
   )
 }
 

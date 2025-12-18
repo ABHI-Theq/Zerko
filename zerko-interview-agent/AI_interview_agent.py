@@ -22,7 +22,7 @@ def interview_agent_auto_number(
     logger.info("Interview Agent request received: post='%s', messages_count=%d, time_left=%s, force_next=%s, lastQuestionAnswered=%s",
                 Post, len(messages), time_left, force_next, lastQuestionAnswered)
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.6)
+    llm = ChatGoogleGenerativeAI(model="gemini-3-pro", temperature=0.6)
     LAST_QUESTION_THRESHOLD = 2 * 60 * 1000
     END_INTERVIEW_THRESHOLD = 30 * 1000
 

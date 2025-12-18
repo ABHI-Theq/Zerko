@@ -146,7 +146,7 @@ export default function ProfilePage() {
 
   return (
     <div className="container max-w-4xl mx-auto py-10 px-4">
-      <Link href={"/"} className="absolute top-10 left-10 cursor:pointer">
+      <Link href={"/dashboard"} className="absolute top-10 left-10 cursor:pointer">
         <Image
           src={"/go-back.png"}
           alt="go Home"
