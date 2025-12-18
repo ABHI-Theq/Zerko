@@ -11,7 +11,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
-          <SidebarTrigger className="" />
+          <div className="sticky top-0 z-20  border-b border-gray-200 px-4 py-2">
+            <SidebarTrigger className="bg-transparent hover:bg-gray-100/50" />
+          </div>
           {children}
         </main>
       </div>

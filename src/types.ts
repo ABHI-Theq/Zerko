@@ -1,3 +1,4 @@
+import { Dispatch, SetStateAction } from "react"
 import {z} from "zod"
 
 export const userSignupSchema=z.object({
@@ -106,4 +107,88 @@ export type InterviewDetsForAPI={
 export type transcriptTypeMsg={
   role:string,
   content:string
+}
+
+//resum optimization types
+export const ResumeOptimizationRequestSchema=z.object({
+    title: z.string().min(1, "Title is required").max(100, "Title must be less than 100 characters"),
+    resume: z.any().refine(
+        (file) =>
+          file &&
+          typeof file === "object" &&
+          "type" in file &&
+          (
+            file.type === "application/pdf" ||
+            file.type === "application/msword" ||
+            file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ),
+        {
+          message: "Only PDF, DOC, or DOCX files are allowed",
+        }
+      ),
+    JobDescription:z.string().min(10,"Job Description must be at least 10 characters")
+})
+
+// Resume Analysis Types (matching Python AnalysisModels.py)
+export interface SkillGap {
+  score: number;
+  matched: string[];
+  missing: string[];
+  suggestion: string;
+}
+
+export interface ImpactAnalysis {
+  quantification_score: number;
+  action_verbs_score: number;
+  suggestion: string;
+}
+
+export interface ATSCheck {
+  score: number;
+  detected_sections: string[];
+  formatting_issues: string[];
+}
+
+export interface Essentials {
+  score: number;
+  contact_info_present: boolean;
+  links_present: boolean;
+}
+
+export interface JobAlignment {
+  score: number;
+  match_status: string;
+  suggestion: string;
+}
+
+export interface AnalysisResult {
+  total_score: number;
+  summary: string;
+  relevance: SkillGap;
+  impact: ImpactAnalysis;
+  ats_compatibility: ATSCheck;
+  essentials: Essentials;
+  jd_alignment: JobAlignment;
+}
+
+export type ResumeContextDets={
+  id: string,
+  userId: string,
+  title: string,
+  resumeText: string | null,
+  cloudinaryUrl: string,
+  jobDescription: string,
+  analysisResult: AnalysisResult | null,
+  totalScore: number,
+  status: "UPLOADED" | "PROCESSING" | "COMPLETED" | "FAILED",
+  createdAt?: string,
+  updatedAt?: string
+}
+
+export interface InterviewContextType {
+  interviews: InterviewDetsForAPI[];
+  loading: boolean;
+  setLoading: Dispatch<SetStateAction<boolean>>;
+  setInterviews: Dispatch<SetStateAction<InterviewDetsForAPI[]>>;
+  refetchInterviews: () => Promise<void>;
 }

@@ -127,7 +127,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {step === 1 ? "Upload Details" : "Interview Settings"}

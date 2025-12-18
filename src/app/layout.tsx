@@ -7,6 +7,7 @@ import { InterviewProvider } from "@/context/InterviewContext";
 import { Suspense } from "react";
 import { InterviewAllProvider } from "@/context/InterviewAllContext";
 import {SpeedInsights} from "@vercel/speed-insights/next";
+import { ResumesContextProvider } from "@/context/ResumeAllContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,16 +42,51 @@ export default function RootLayout({
           <div className="min-h-screen w-full bg-[#e2e2e2] relative text-gray-800">
             <div
               className="absolute inset-0 z-0 pointer-events-none grid-bg"
-             
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(75, 85, 99, 0.08) 20px, rgba(75, 85, 99, 0.08) 21px),
+                  repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(107, 114, 128, 0.06) 30px, rgba(107, 114, 128, 0.06) 31px),
+                  repeating-linear-gradient(60deg, transparent, transparent 40px, rgba(55, 65, 81, 0.05) 40px, rgba(55, 65, 81, 0.05) 41px),
+                  repeating-linear-gradient(150deg, transparent, transparent 35px, rgba(31, 41, 55, 0.04) 35px, rgba(31, 41, 55, 0.04) 36px)
+                `,
+              }}
             />
             <SessionProvider>
               <InterviewAllProvider>
+                <ResumesContextProvider>
                 <InterviewProvider>
                   <main className="z-10">
                   {children}
                   </main>
-                  <Toaster position="bottom-right" />
+                  <Toaster 
+                    position="top-right" 
+                    toastOptions={{
+                      duration: 5000,
+                      style: {
+                        background: '#fff',
+                        color: '#374151',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                      },
+                      success: {
+                        duration: 6000,
+                        iconTheme: {
+                          primary: '#10b981',
+                          secondary: '#fff',
+                        },
+                      },
+                      error: {
+                        duration: 8000,
+                        iconTheme: {
+                          primary: '#ef4444',
+                          secondary: '#fff',
+                        },
+                      },
+                    }}
+                  />
                 </InterviewProvider>
+                </ResumesContextProvider>
               </InterviewAllProvider>
             </SessionProvider>
           </div>

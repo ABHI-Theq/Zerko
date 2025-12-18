@@ -5,7 +5,7 @@ COPY package.json ./
 COPY pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm dlx prisma generate
+RUN pnpm dlx prisma@6.16.1 generate
 RUN pnpm run build
 
 FROM node:22-alpine AS runner

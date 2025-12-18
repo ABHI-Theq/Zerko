@@ -50,8 +50,13 @@ const ParsingResume: React.FC<ParsingResumeProps> = ({ open, onClose, resumeUrl,
   }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={(openState) => {
+      // Only allow closing via the X button, not by clicking outside or pressing Escape
+      if (!openState && !loading) {
+        onClose();
+      }
+    }}>
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Parsing Resume...</DialogTitle>
         </DialogHeader>
