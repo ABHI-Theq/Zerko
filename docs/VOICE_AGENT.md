@@ -1,8 +1,17 @@
-# Voice Agent System Documentation - Zerko Platform
+# Advanced Voice Agent System Documentation - Zerko Platform
 
 ## 📋 Overview
 
-The Voice Agent System is the core component that enables real-time voice-based interviews in the Zerko platform. It combines browser-native Web Speech API with intelligent error handling, cross-browser compatibility, and seamless fallback mechanisms.
+The Zerko Voice Agent System represents a cutting-edge implementation of real-time voice-based interview technology. This sophisticated system seamlessly integrates browser-native Web Speech API with advanced AI processing, intelligent error handling, cross-browser compatibility, and robust fallback mechanisms to deliver a professional-grade interview experience across all major browsers and devices.
+
+### Key Capabilities
+
+- **Universal Browser Support**: Optimized for Chrome, Firefox, Safari, Edge, and Brave
+- **Intelligent Speech Recognition**: Advanced processing with confidence scoring and quality metrics
+- **Real-time Audio Processing**: Low-latency speech-to-text with noise suppression
+- **Adaptive Error Recovery**: Multi-layered error handling with automatic fallback systems
+- **Cross-Platform Compatibility**: Consistent experience across desktop and mobile devices
+- **AI-Powered Conversation**: Integration with Google Gemini 2.5 Pro for intelligent responses
 
 ## 🏗️ Architecture
 
