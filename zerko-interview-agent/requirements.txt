@@ -11,4 +11,5 @@ pymupdf
 prisma 
 asyncio
 tenacity
+google-api-core
 

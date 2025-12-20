@@ -6,7 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from AnalysisModels import AnalysisResult  # Importing your Pydantic schema
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from google.genai.errors import ClientError
+from google.api_core.exceptions import GoogleAPIError
 import config
 
 load_dotenv()
@@ -15,7 +15,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",  
+    model="gemini-2.5-flash",  
     temperature=0,
     max_retries=2,
 )
@@ -59,7 +59,7 @@ analysis_chain = analysis_prompt | structured_llm
 # --- RETRY CONFIGURATION ---
 def should_retry_exception(exception):
     """Determine if we should retry based on the exception type and message"""
-    if isinstance(exception, (ChatGoogleGenerativeAIError, ClientError)):
+    if isinstance(exception, (ChatGoogleGenerativeAIError, GoogleAPIError)):
         error_msg = str(exception).lower()
         # Retry on quota/rate limit errors
         if any(keyword in error_msg for keyword in ['quota', 'rate limit', '429', 'resource_exhausted']):
@@ -73,7 +73,7 @@ def should_retry_exception(exception):
         min=config.GEMINI_RETRY_MIN_WAIT, 
         max=config.GEMINI_RETRY_MAX_WAIT
     ),
-    retry=retry_if_exception_type((ChatGoogleGenerativeAIError, ClientError)),
+    retry=retry_if_exception_type((ChatGoogleGenerativeAIError, GoogleAPIError)),
     reraise=False  # Don't reraise after all attempts fail
 )
 def _call_gemini_with_retry(resume_text: str, jd_text: str, formatting_issues: str) -> AnalysisResult:
@@ -126,25 +126,33 @@ def _create_fallback_analysis(resume_text: str, jd_text: str, formatting_issues:
     
     fallback_analysis = {
         "total_score": total_score,
-        "relevance_score": max(0, total_score - 20),
-        "impact_score": max(0, total_score - 15),
-        "ats_score": max(0, total_score - 10),
-        "essentials_score": max(0, total_score - 5),
-        "jd_alignment_score": max(0, total_score - 10),
-        "strengths": [
-            "Resume content detected and processed",
-            "Basic structure appears intact",
-            "Content length is appropriate" if 1000 <= resume_length <= 3000 else "Consider adjusting content length"
-        ],
-        "improvements": [
-            "AI analysis temporarily unavailable - this is a basic assessment",
-            "Try again later for detailed AI-powered insights",
-            "Consider reviewing formatting if issues were detected"
-        ] + ([f"Address {len(formatting_issues)} formatting issues"] if formatting_issues else []),
-        "missing_keywords": ["Unable to analyze keywords - AI service unavailable"],
-        "ats_issues": formatting_issues if formatting_issues else ["No major formatting issues detected"],
-        "analysis_status": "fallback_mode",
-        "fallback_reason": "AI service temporarily unavailable due to quota limits"
+        "summary": "Basic analysis completed - AI service temporarily unavailable",
+        "relevance": {
+            "score": max(0, total_score - 20),
+            "matched": ["Unable to analyze - AI service unavailable"],
+            "missing": ["Unable to analyze - AI service unavailable"],
+            "suggestion": "AI analysis temporarily unavailable - try again later"
+        },
+        "impact": {
+            "quantification_score": max(0, total_score - 25),
+            "action_verbs_score": max(0, total_score - 30),
+            "suggestion": "AI analysis temporarily unavailable - try again later"
+        },
+        "ats_compatibility": {
+            "score": max(0, total_score - 10),
+            "detected_sections": ["Unable to analyze - AI service unavailable"],
+            "formatting_issues": formatting_issues if formatting_issues else []
+        },
+        "essentials": {
+            "score": max(0, total_score - 5),
+            "contact_info_present": True,  # Assume present since resume was uploaded
+            "links_present": False  # Conservative assumption
+        },
+        "jd_alignment": {
+            "score": max(0, total_score - 10),
+            "match_status": "Medium",  # Conservative assumption
+            "suggestion": "AI analysis temporarily unavailable - try again later"
+        }
     }
     
     return fallback_analysis

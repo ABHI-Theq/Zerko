@@ -1,12 +1,12 @@
-from pydantic import BaseModel, Field
 from typing import List
+from pydantic import BaseModel, Field
 
 # --- Sub-Models ---
 
 class SkillGap(BaseModel):
     score: int = Field(description="Score out of 20")
-    matched: List[str] = Field(description="Skills found in both JD and Resume")
-    missing: List[str] = Field(description="Critical skills in JD but NOT in Resume")
+    matched: List[str] = Field(default_factory=list, description="Skills found in both JD and Resume")
+    missing: List[str] = Field(default_factory=list, description="Critical skills in JD but NOT in Resume")
     suggestion: str
 
 class ImpactAnalysis(BaseModel):
@@ -16,8 +16,8 @@ class ImpactAnalysis(BaseModel):
 
 class ATSCheck(BaseModel):
     score: int = Field(description="Score out of 20")
-    detected_sections: List[str]
-    formatting_issues: List[str] = Field(description="List of parsing errors or bad formatting")
+    detected_sections: List[str] = Field(default_factory=list)
+    formatting_issues: List[str] = Field(default_factory=list, description="List of parsing errors or bad formatting")
 
 class Essentials(BaseModel):
     score: int = Field(description="Score out of 10")
@@ -39,7 +39,6 @@ class AnalysisResult(BaseModel):
     ats_compatibility: ATSCheck
     essentials: Essentials
     jd_alignment: JobAlignment
-
 # --- API Request Schema ---
 class AnalyzeRequest(BaseModel):
     resumeId: str

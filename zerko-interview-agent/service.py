@@ -1,8 +1,14 @@
 import asyncio
 import logging
+import json
+import datetime
 from DBConnect import DBConnect
 from utils.check import check_formatting_issues
 import config
+
+# --- IMPORT MODELS ---
+# Make sure schemas.py is in the same folder, or adjust import path
+from AnalysisModels import AnalysisResult
 
 # --- IMPORT AGENTS ---
 from Question_generator_agent import parse_Resume
@@ -17,52 +23,45 @@ async def safe_background_task_wrapper(resume_id: str, file_url: str, jd_text: s
     try:
         await process_resume_analysis(resume_id, file_url, jd_text)
     except Exception as e:
-        logger.error(f"❌ [SERVICE_WRAPPER] Background task failed for {resume_id} (attempt {retry_count + 1})")
+        logger.error(f"❌ Background task failed for {resume_id} (attempt {retry_count + 1})")
         
         if retry_count < config.SERVICE_MAX_RETRIES:
-            logger.info(f"🔄 [SERVICE_WRAPPER] Scheduling retry {retry_count + 1}/{config.SERVICE_MAX_RETRIES} in {config.SERVICE_RETRY_DELAY}s")
+            logger.info(f"🔄 Scheduling retry {retry_count + 1}/{config.SERVICE_MAX_RETRIES} in {config.SERVICE_RETRY_DELAY}s")
             await asyncio.sleep(config.SERVICE_RETRY_DELAY)
             await safe_background_task_wrapper(resume_id, file_url, jd_text, retry_count + 1)
         else:
-            logger.error(f"💥 [SERVICE_WRAPPER] All retry attempts exhausted for {resume_id}")
-            logger.error(f"⚠️ [SERVICE_WRAPPER] Service continues running - individual task marked as failed")
+            logger.error(f"💥 All retry attempts exhausted for {resume_id}")
             # Service continues running - don't re-raise
 
 async def process_resume_analysis(resume_id: str, file_url: str, jd_text: str):
     """
     Background worker that performs the analysis and updates the DB.
     """
-    logger.info(f"🚀 [BACKGROUND_TASK] Starting analysis for resume ID: {resume_id}")
-    logger.info(f"📋 [BACKGROUND_TASK] Task details: fileUrl={file_url}, jobDescLength={len(jd_text)}")
+    logger.info(f"🚀 Starting analysis for resume ID: {resume_id}")
     
     db = None
     try:
         # 1. Parse Resume
-        logger.info(f"📄 [BACKGROUND_TASK] Step 1: Parsing resume from URL: {file_url}")
         parse_start_time = asyncio.get_event_loop().time()
-        
         resume_text = parse_Resume(file_url) 
         parse_time = asyncio.get_event_loop().time() - parse_start_time
-        logger.info(f"⏱️ [BACKGROUND_TASK] Resume parsing completed in {parse_time:.2f}s")
+        logger.info(f"📄 Resume parsing completed in {parse_time:.2f}s")
         
         if not resume_text:
-            logger.error(f"❌ [BACKGROUND_TASK] Empty text extracted from resume: {resume_id}")
+            logger.error(f"❌ Empty text extracted from resume: {resume_id}")
             raise ValueError("Empty text extracted from resume")
         
-        logger.info(f"📝 [BACKGROUND_TASK] Extracted resume text length: {len(resume_text)} characters")
-        
         # Connect to DB
-        logger.info(f"🔌 [BACKGROUND_TASK] Connecting to database")
         db = await DBConnect()
-        logger.info(f"✅ [BACKGROUND_TASK] Database connected successfully")
+        logger.info(f"✅ Database connected successfully")
 
         # 2. Check Formatting
-        logger.info(f"🔍 [BACKGROUND_TASK] Step 2: Checking formatting issues")
         formatting_issues = check_formatting_issues(resume_text)
-        logger.info(f"📋 [BACKGROUND_TASK] Found {len(formatting_issues)} formatting issues: {formatting_issues}")
+        if formatting_issues:
+            logger.info(f"📋 Found {len(formatting_issues)} formatting issues")
 
-        # 3. Run AI Analysis (Blocking Call -> Run in Thread)
-        logger.info(f"🤖 [BACKGROUND_TASK] Step 3: Starting AI analysis with retry mechanism")
+        # 3. Run AI Analysis
+        logger.info(f"🤖 Starting AI analysis")
         ai_start_time = asyncio.get_event_loop().time()
         
         try:
@@ -74,72 +73,112 @@ async def process_resume_analysis(resume_id: str, file_url: str, jd_text: str):
             )
             
             ai_time = asyncio.get_event_loop().time() - ai_start_time
-            logger.info(f"⏱️ [BACKGROUND_TASK] AI analysis completed in {ai_time:.2f}s")
-            logger.info(f"📊 [BACKGROUND_TASK] Analysis result type: {type(analysis_json)}")
+            logger.info(f"⏱️ AI analysis completed in {ai_time:.2f}s")
             
             # Check if this is a fallback response
             is_fallback = analysis_json.get('analysis_status') == 'fallback_mode'
             if is_fallback:
-                logger.warning(f"⚠️ [BACKGROUND_TASK] Using fallback analysis due to: {analysis_json.get('fallback_reason', 'Unknown')}")
+                logger.warning(f"⚠️ Using fallback analysis: {analysis_json.get('fallback_reason', 'Unknown')}")
             
             if isinstance(analysis_json, dict):
-                logger.info(f"📈 [BACKGROUND_TASK] Analysis keys: {list(analysis_json.keys())}")
-                total_score = analysis_json.get('total_score', 0)
-                logger.info(f"🎯 [BACKGROUND_TASK] Total score extracted: {total_score}")
+                total_score = int(analysis_json.get('total_score', 0))
+                logger.info(f"🎯 Analysis completed - Score: {total_score}")
             else:
-                logger.warning(f"⚠️ [BACKGROUND_TASK] Unexpected analysis result type: {type(analysis_json)}")
+                logger.warning(f"⚠️ Unexpected analysis result type: {type(analysis_json)}")
                 total_score = 0
                 
         except Exception as ai_error:
-            # This should rarely happen now since analyze_resume has its own error handling
-            logger.error(f"❌ [BACKGROUND_TASK] Unexpected error in AI analysis thread: {str(ai_error)}")
-            logger.info(f"🔄 [BACKGROUND_TASK] Creating emergency fallback response")
+            logger.error(f"❌ AI analysis failed: {str(ai_error)}")
+            logger.info(f"🔄 Creating emergency fallback response")
             
             # Create emergency fallback
             analysis_json = {
                 "total_score": 50,
-                "relevance_score": 40,
-                "impact_score": 45,
-                "ats_score": 50,
-                "essentials_score": 60,
-                "jd_alignment_score": 40,
-                "strengths": ["Resume processed successfully", "Basic analysis completed"],
-                "improvements": ["Detailed AI analysis temporarily unavailable", "Please try again later"],
-                "missing_keywords": ["Analysis unavailable"],
-                "ats_issues": formatting_issues if formatting_issues else ["No major issues detected"],
-                "analysis_status": "emergency_fallback",
-                "fallback_reason": f"System error: {str(ai_error)}"
+                "summary": "Emergency fallback analysis - system error occurred",
+                "relevance": {
+                    "score": 40,
+                    "matched": ["Unable to analyze due to system error"],
+                    "missing": ["Unable to analyze due to system error"],
+                    "suggestion": "System error occurred - please try again later"
+                },
+                "impact": {
+                    "quantification_score": 35,
+                    "action_verbs_score": 30,
+                    "suggestion": "System error occurred - please try again later"
+                },
+                "ats_compatibility": {
+                    "score": 40,
+                    "detected_sections": ["Unable to analyze due to system error"],
+                    "formatting_issues": formatting_issues if formatting_issues else []
+                },
+                "essentials": {
+                    "score": 45,
+                    "contact_info_present": True,
+                    "links_present": False
+                },
+                "jd_alignment": {
+                    "score": 35,
+                    "match_status": "Medium",
+                    "suggestion": "System error occurred - please try again later"
+                }
             }
             total_score = 50
-            ai_time = asyncio.get_event_loop().time() - ai_start_time
 
         # 4. Update Database
-        logger.info(f"💾 [BACKGROUND_TASK] Step 4: Updating database with results")
+        logger.info(f"💾 Updating database with results")
         if not db.is_connected():
-            logger.info(f"🔌 [BACKGROUND_TASK] Reconnecting to database")
             await db.connect()
 
+        # ------------------------------------------------------------
+        # 🧼 SANITIZATION STEP: Clean Data via Pydantic
+        # ------------------------------------------------------------
+        final_payload = {}
+        try:
+            # Prepare raw data
+            if hasattr(analysis_json, 'model_dump'):
+                raw_data = analysis_json.model_dump()
+            elif hasattr(analysis_json, 'dict'):
+                raw_data = analysis_json.dict()
+            else:
+                raw_data = analysis_json
+
+            # VALIDATE: Force data into the strict Pydantic shape
+            # This strips out deep nesting and garbage fields that crash Prisma
+            logger.info("🧼 Sanitizing data with Pydantic model...")
+            clean_model = AnalysisResult(**raw_data)
+            final_payload = clean_model.model_dump()
+            logger.info("✅ Data sanitization successful.")
+
+        except Exception as validation_error:
+            logger.error(f"❌ Pydantic Validation Failed: {validation_error}")
+            logger.warning("⚠️ Falling back to raw dictionary (RISKY)")
+            # Fallback to the raw dict, but ensure it's JSON serializable at least
+            final_payload = raw_data if isinstance(raw_data, dict) else {}
+
+        # ------------------------------------------------------------
+
         # Update the record with COMPLETED status and result
-        update_start_time = asyncio.get_event_loop().time()
+        logger.info(f"💾 About to update DB with payload keys: {list(final_payload.keys())}")
+        
+        # Ensure totalScore is an integer
+        total_score_int = int(total_score) if total_score is not None else 0
+        
+        # CRITICAL: Convert dict to JSON string for Prisma to properly parse as JSON type
+        analysis_result_json = json.dumps(final_payload)
         await db.resumeanalysis.update(
             where={'id': resume_id},
             data={
                 'status': "COMPLETED",
-                'analysisResult': analysis_json, 
+                'analysisResult': analysis_result_json, # Pass as JSON string
                 'resumeText': resume_text,
-                'totalScore': total_score
+                'totalScore': total_score_int
             }
         )
-        update_time = asyncio.get_event_loop().time() - update_start_time
-        logger.info(f"⏱️ [BACKGROUND_TASK] Database update completed in {update_time:.2f}s")
-        logger.info(f"✅ [BACKGROUND_TASK] SUCCESS: Analysis completed and saved for {resume_id}")
-        logger.info(f"📊 [BACKGROUND_TASK] Final status: COMPLETED, Score: {total_score}")
+        logger.info(f"✅ SUCCESS: Analysis completed and saved for {resume_id} - Score: {total_score}")
 
     except Exception as e:
-        logger.error(f"❌ [BACKGROUND_TASK] FAILED: Error processing {resume_id}")
-        logger.error(f"❌ [BACKGROUND_TASK] Error type: {type(e).__name__}")
-        logger.error(f"❌ [BACKGROUND_TASK] Error message: {str(e)}")
-        logger.exception(f"❌ [BACKGROUND_TASK] Full traceback for {resume_id}")
+        logger.error(f"❌ FAILED: Error processing {resume_id}: {str(e)}")
+        logger.exception(f"Full traceback for {resume_id}")
         
         # Determine if this is a critical failure or recoverable
         error_msg = str(e).lower()
@@ -147,70 +186,69 @@ async def process_resume_analysis(resume_id: str, file_url: str, jd_text: str):
             'quota', 'rate limit', '429', 'resource_exhausted', 'timeout', 'network'
         ])
         
-        if is_recoverable:
-            logger.info(f"🔄 [BACKGROUND_TASK] Error appears recoverable, marking for retry: {resume_id}")
-            status = "RETRY_NEEDED"
-        else:
-            logger.info(f"💥 [BACKGROUND_TASK] Error appears critical, marking as failed: {resume_id}")
-            status = "FAILED"
+        status = "RETRY_NEEDED" if is_recoverable else "FAILED"
+        logger.info(f"🔄 Marking as {status}")
         
-        # Update DB with appropriate status - DO NOT let this crash the service
+        # Update DB with appropriate status
         try:
-            logger.info(f"🔄 [BACKGROUND_TASK] Attempting to update status to {status} for {resume_id}")
             if db is None:
-                logger.info(f"🔌 [BACKGROUND_TASK] Creating new DB connection for failure update")
                 try:
                     db = await DBConnect()
                 except Exception as db_conn_error:
-                    logger.error(f"❌ [BACKGROUND_TASK] Failed to create DB connection: {db_conn_error}")
-                    logger.error(f"⚠️ [BACKGROUND_TASK] Continuing without DB update to prevent service crash")
-                    return  # Exit gracefully without crashing the service
+                    logger.error(f"❌ Failed to create DB connection: {db_conn_error}")
+                    return
                     
             elif not db.is_connected():
-                logger.info(f"🔌 [BACKGROUND_TASK] Reconnecting to database for failure update")
                 try:
                     await db.connect()
                 except Exception as db_conn_error:
-                    logger.error(f"❌ [BACKGROUND_TASK] Failed to reconnect to DB: {db_conn_error}")
-                    logger.error(f"⚠️ [BACKGROUND_TASK] Continuing without DB update to prevent service crash")
-                    return  # Exit gracefully without crashing the service
+                    logger.error(f"❌ Failed to reconnect to DB: {db_conn_error}")
+                    return
+            
+            # Create a safe error result for the database
+            error_result = {
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'is_recoverable': is_recoverable,
+                'timestamp': datetime.datetime.now().isoformat()
+            }
+            
+            # Ensure error result is JSON serializable
+            try:
+                error_result_json = json.dumps(error_result)
+            except (TypeError, ValueError):
+                error_result = {
+                    'error': 'Serialization error occurred',
+                    'error_type': type(e).__name__,
+                    'is_recoverable': False
+                }
+                error_result_json = json.dumps(error_result)
                 
             await db.resumeanalysis.update(
                 where={'id': resume_id},
                 data={
                     'status': status,
-                    'analysisResult': {
-                        'error': str(e),
-                        'error_type': type(e).__name__,
-                        'is_recoverable': is_recoverable,
-                        'timestamp': asyncio.get_event_loop().time()
-                    } if status == "FAILED" else None
+                    'analysisResult': error_result_json if status == "FAILED" else None
                 }
             )
-            logger.info(f"✅ [BACKGROUND_TASK] Status updated to {status} for {resume_id}")
+            logger.info(f"✅ Status updated to {status} for {resume_id}")
             
         except Exception as db_error:
-            logger.error(f"❌ [BACKGROUND_TASK] Failed to update DB status to {status} for {resume_id}: {db_error}")
-            logger.exception(f"❌ [BACKGROUND_TASK] DB update failure traceback")
-            logger.error(f"⚠️ [BACKGROUND_TASK] Service will continue running despite DB update failure")
-            # DO NOT re-raise - let the service continue running
+            logger.error(f"❌ Failed to update DB status: {db_error}")
     
     finally:
         # Cleanup
         if db and db.is_connected():
-            logger.info(f"🔌 [BACKGROUND_TASK] Disconnecting from database")
             await db.disconnect()
-        logger.info(f"🏁 [BACKGROUND_TASK] Background task completed for {resume_id}")
 
 # --- SERVICE HEALTH MONITORING ---
 async def log_service_health():
     """
     Periodic health check logging to ensure service is running
     """
-    logger.info("💚 [SERVICE_HEALTH] Resume analysis service is running and healthy")
-    logger.info("🔧 [SERVICE_HEALTH] Retry mechanism active - API failures will not crash service")
-    logger.info("🛡️ [SERVICE_HEALTH] Fallback analysis available when AI service is unavailable")
-
+    logger.info("💚 Resume analysis service is running and healthy")
+    logger.info("🔧 Retry mechanism active - API failures will not crash service")
+    logger.info("🛡️ Fallback analysis available when AI service is unavailable")
 # --- USAGE INSTRUCTIONS ---
 """
 To use the resilient service:
