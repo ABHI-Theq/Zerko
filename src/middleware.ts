@@ -1,6 +1,7 @@
 export const runtime="nodejs"
 import { auth } from "@/lib/auth";
 import { NextResponse, NextRequest } from "next/server";
+import ratelimit from "@/lib/rateLimit";
 
 import {
   publicRoutes,
@@ -8,12 +9,43 @@ import {
   DEFAULT_LOGIN_REDIRECT,
 } from "@/route_util";
 
-export default auth((req) => {
+export default auth(async (req) => {
   // req is AuthRequest, so cast it to NextRequest to access nextUrl & url
   const request = req as unknown as NextRequest;
 
   const isLoggedIn = !!req.auth;
   const { pathname } = request.nextUrl;
+
+  let rateLimitResult: { success: boolean; limit: number; reset: number; remaining: number } | null = null;
+
+  // Apply rate limiting to all API routes
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/')) {
+    const ip = request.headers.get("x-forwarded-for") ?? 
+              request.headers.get("x-real-ip") ?? 
+              "127.0.0.1";
+    rateLimitResult = await ratelimit.limit(ip);
+
+    if (!rateLimitResult.success) {
+      return new NextResponse(
+        JSON.stringify({
+          error: "Too many requests",
+          message: "Rate limit exceeded. Please try again later.",
+          limit: rateLimitResult.limit,
+          remaining: rateLimitResult.remaining,
+          reset: new Date(rateLimitResult.reset)
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": rateLimitResult.reset.toString(),
+          },
+        }
+      );
+    }
+  }
 
   const isPublic = publicRoutes.includes(pathname);
   const isAuthPage = authRoutes.includes(pathname);
@@ -32,7 +64,16 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  // Create response and add rate limit headers if this was an API request
+  const response = NextResponse.next();
+  
+  if (rateLimitResult) {
+    response.headers.set("X-RateLimit-Limit", rateLimitResult.limit.toString());
+    response.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
+    response.headers.set("X-RateLimit-Reset", rateLimitResult.reset.toString());
+  }
+
+  return response;
 });
 
 export const config = {

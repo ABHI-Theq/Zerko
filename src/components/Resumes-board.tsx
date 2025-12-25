@@ -109,11 +109,11 @@ const ResumesAnalysisComponent = () => {
     return (
         <div className='w-full px-2'>
             {resumesAnalysis && resumesAnalysis.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                <div className="flex items-center justify-start gap-6 w-full">
                     {resumesAnalysis.map((resume, index) => (
                         <div 
                             key={resume.id || index}
-                            className="group relative bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300 overflow-hidden"
+                            className="group relative bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300 overflow-hidden max-w-[40%]"
                         >
                             {/* Delete Button */}
                             <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

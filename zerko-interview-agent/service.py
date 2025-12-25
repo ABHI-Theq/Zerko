@@ -157,13 +157,11 @@ async def process_resume_analysis(resume_id: str, file_url: str, jd_text: str):
 
         # ------------------------------------------------------------
 
-        # Update the record with COMPLETED status and result
         logger.info(f"💾 About to update DB with payload keys: {list(final_payload.keys())}")
         
-        # Ensure totalScore is an integer
         total_score_int = int(total_score) if total_score is not None else 0
         
-        # CRITICAL: Convert dict to JSON string for Prisma to properly parse as JSON type
+        # dict -> json
         analysis_result_json = json.dumps(final_payload)
         await db.resumeanalysis.update(
             where={'id': resume_id},

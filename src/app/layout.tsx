@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={geistSans.className}>
+    <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
@@ -92,7 +92,6 @@ export default function RootLayout({
           </div>
         </Suspense>
         <SpeedInsights/>
-
       </body>
     </html>
   );
