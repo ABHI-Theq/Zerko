@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { QuestionsListSchema, QuestionsList } from "@/types";
 import { useInterviewCon } from "@/context/InterviewContext";
+import { useInterviewConAll } from "@/context/InterviewAllContext";
 
 interface QuestionGenerationProps {
   open: boolean;
@@ -28,6 +29,7 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const { interview, setInterview } = useInterviewCon();
+  const { refetchInterviews } = useInterviewConAll();
   const router = useRouter();
 
   const generateAndSaveQuestions = async () => {
@@ -62,6 +64,10 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questions }),
       });
+
+      // Trigger refetch to update the interviews list
+      console.log('🔄 [QUESTION_GEN] Triggering interview list refetch after creation');
+      await refetchInterviews();
 
       toast.success("Redirecting to Interview...");
       onClose();

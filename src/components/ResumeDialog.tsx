@@ -14,6 +14,7 @@ import { Input } from "./ui/input";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { useResumeConAll } from "@/context/ResumeAllContext";
 
 const ResumeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
   
@@ -25,6 +26,7 @@ const ResumeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (op
   const [titleExists, setTitleExists] = useState<boolean>(false);
   const [checkingTitle, setCheckingTitle] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { refetchResumes } = useResumeConAll();
   const router = useRouter();
 
   // Generate default title based on current date
@@ -175,6 +177,10 @@ const ResumeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (op
         resumeId: data.resumeId,
         success: data.success
       });
+
+      // Trigger refetch to update the resumes list
+      console.log('🔄 [RESUME_DIALOG] Triggering resume list refetch after creation');
+      await refetchResumes();
 
       toast.success("Resume evaluation started successfully! Redirecting to analysis page...");
       

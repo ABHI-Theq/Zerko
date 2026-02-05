@@ -41,6 +41,7 @@ model Account {
 model Interview {
   id                String          @id @default(uuid()) @db.Uuid
   userId            String          @db.Uuid
+  name              String
   post              String
   jobDescription    String
   resume            String?
@@ -59,6 +60,8 @@ model Interview {
   overall_rating    Int?
   strengths         String[]
   user              User            @relation(fields: [userId], references: [id])
+
+  @@unique([userId, name])
 }
 
 model Session {

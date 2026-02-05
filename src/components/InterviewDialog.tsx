@@ -33,6 +33,10 @@ interface InterviewDialogProps {
 const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [name, setName] = useState<string>("");
+  const [nameError, setNameError] = useState("");
+  const [nameExists, setNameExists] = useState(false);
+  const [checkingName, setCheckingName] = useState(false);
   const [post, setPost] = useState<string | null>(null);
   const [jobDescription, setJobDescription] = useState<string | null>(null);
   const [resume, setResume] = useState<File | null>(null);
@@ -44,9 +48,85 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
   const [progressStep, setProgressStep] = useState<"upload" | "parse" | "generate" | "done" | null>(null);
   const { setInterview } = { ...useInterviewCon() };
 
+  // Generate default name based on current date
+  const generateDefaultName = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    return `Interview - ${dateStr}`;
+  };
+
+  // Initialize with default name when dialog opens
+  useEffect(() => {
+    if (open && !name) {
+      setName(generateDefaultName());
+    }
+  }, [open]);
+
+  // Check name availability
+  const checkNameAvailability = async (nameToCheck: string) => {
+    if (!nameToCheck.trim()) {
+      setNameError("");
+      setNameExists(false);
+      return;
+    }
+
+    setCheckingName(true);
+    try {
+      const response = await fetch('/api/interview/check-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameToCheck.trim() }),
+      });
+
+      const data = await response.json();
+      
+      if (data.exists) {
+        setNameExists(true);
+        setNameError(data.message);
+      } else {
+        setNameExists(false);
+        setNameError("");
+      }
+    } catch (error) {
+      console.error('Error checking name:', error);
+      setNameError("Error checking name availability");
+    } finally {
+      setCheckingName(false);
+    }
+  };
+
+  // Debounce name checking
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (name.trim()) {
+        checkNameAvailability(name);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [name]);
+
   // Handle Start Interview
   const handleStartInterview = async () => {
     if (loading) return;
+
+    // Validation
+    if (!name.trim()) {
+      setNameError("Interview name is required");
+      return;
+    }
+    
+    if (nameExists) {
+      setNameError("Please choose a different name");
+      return;
+    }
+
     setLoading(true);
     setProgressStep("upload");
 
@@ -65,6 +145,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
     }
 
     const formData = new FormData();
+    formData.append("name", name.trim());
     formData.append("post", post ?? "");
     formData.append("jobDescription", jobDescription ?? "");
     if (resume) formData.append("resume", resume);
@@ -142,6 +223,38 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
           {/* Step 1: Job Details + Resume */}
           {step === 1 && (
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Interview Name *</Label>
+                <div className="relative mt-2">
+                  <Input
+                    id="name"
+                    placeholder="Enter a unique name for this interview"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pr-10"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    {checkingName && <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />}
+                    {!checkingName && name.trim() && !nameExists && (
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    {!checkingName && nameExists && (
+                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                {nameError && (
+                  <p className="text-sm text-red-600 mt-1">{nameError}</p>
+                )}
+                {!nameError && name.trim() && !nameExists && !checkingName && (
+                  <p className="text-sm text-green-600 mt-1">Name is available</p>
+                )}
+              </div>
+
               <div className="">
                 <Label htmlFor="post">Post</Label>
                 <Select value={post ?? ""} onValueChange={setPost} >
@@ -203,7 +316,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                 </Button>
                 <Button
                   onClick={() => setStep(2)}
-                  disabled={!jobDescription || !resume || !post}
+                  disabled={!name.trim() || nameExists || !jobDescription || !resume || !post || checkingName}
                 >
                   Next
                 </Button>

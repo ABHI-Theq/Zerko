@@ -35,11 +35,35 @@ export async function POST(req: Request) {
       );
     }
 
+    const name = formData.get("name") as string | null;
     const post = formData.get("post") as string | null;
     const jobDescription = formData.get("jobDescription") as string | null;
     const interviewType = formData.get("interviewType") as InterviewType;
     const duration = formData.get("duration") as string | null;
     const resume = formData.get("resume") as File | null;
+
+    // Validate name
+    if (!name || !name.trim()) {
+      return NextResponse.json(
+        { error: "Interview name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if name already exists for this user
+    const existingInterview = await prisma.interview.findFirst({
+      where: {
+        userId: session.user.id,
+        name: name.trim(),
+      },
+    });
+
+    if (existingInterview) {
+      return NextResponse.json(
+        { error: "An interview with this name already exists" },
+        { status: 400 }
+      );
+    }
 
     // ✅ Validate non-file fields with Zod
     const parsed = InterviewCreationSchema.safeParse({
@@ -117,7 +141,7 @@ export async function POST(req: Request) {
     // 🟢 Create interview in DB
     const userId = session.user.id;
 
-    if (!post || !jobDescription || !interviewType || !duration) {
+    if (!name || !post || !jobDescription || !interviewType || !duration) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
@@ -128,6 +152,7 @@ export async function POST(req: Request) {
       data: {
         id:uuidv4(), 
         userId,
+        name: name.trim(),
         post: post,
         jobDescription: jobDescription,
         interviewType: interviewType as InterviewType,
