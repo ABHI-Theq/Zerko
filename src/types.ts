@@ -92,6 +92,7 @@ export type InterviewDetails={
 
 export type InterviewDetsForAPI={
    id: string | null,
+  name: string | null,
   post: string | null,
   jobDescription: string | null,   
   resume :string | null,
@@ -101,6 +102,10 @@ export type InterviewDetsForAPI={
   transcript: transcriptTypeMsg[] | null,
   feedback: string | null,
   feedbackGenerated: boolean | null,
+  feedbackStr: string | null,
+  improvements: string[] | null,
+  overall_rating: number | null,
+  strengths: string[] | null,
   createdAt: Date | null
 }
 
