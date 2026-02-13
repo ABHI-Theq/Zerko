@@ -19,7 +19,7 @@ import {
 import { useInterviewConAll } from '@/context/InterviewAllContext';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, FileText, ArrowRight, Briefcase } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 const InterviewsBoard = () => {
     const router = useRouter();

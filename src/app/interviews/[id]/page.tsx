@@ -11,7 +11,7 @@ import { InterviewQuestion, transcriptTypeMsg } from "@/types";
 import Link from "next/link";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import convertMarkdown from "@/lib/convert_markdown";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export default function Page() {
   const params = useParams();
