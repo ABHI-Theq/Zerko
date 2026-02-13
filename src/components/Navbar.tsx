@@ -37,10 +37,9 @@ export default function Navbar() {
 
 
   return (
-    <div
-      className="fixed top-6 left-1/2 -translate-x-1/2 w-[75vw] rounded-4xl z-50  bg-white backdrop-blur-md shadow-md"
-      style={{ boxShadow: "0px 0px 39px 7px rgba(0,0,0,0.1)" }}
-    >
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 w-[75vw] rounded-full z-50">
+          
+
       <ResizableNavbar>
         {/* Desktop Navigation */}
         <NavBody>
