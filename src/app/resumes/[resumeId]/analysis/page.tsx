@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import ResumeAnalysisDisplay from "@/components/ResumeAnalysisDisplay";
+import { useResumeConAll } from "@/context/ResumeAllContext";
 
 const ResumeAnalysisPage = () => {
   const params = useParams();
   const router = useRouter();
   const resumeId = params.resumeId as string;
+  const { resumesAnalysis } = useResumeConAll();
   
   const [resume, setResume] = useState<ResumeContextDets | null>(null);
   const [loading, setLoading] = useState(true);
@@ -244,12 +246,22 @@ const ResumeAnalysisPage = () => {
     }
   };
 
-  // Initial fetch
+  // Try to get resume from context first, then fetch if not found
   useEffect(() => {
     if (resumeId) {
-      fetchResumeData();
+      // Check if resume exists in context
+      const contextResume = resumesAnalysis.find(r => r.id === resumeId);
+      
+      if (contextResume) {
+        console.log('✅ [RESUME_ANALYSIS] Using resume from context (instant load)');
+        setResume(contextResume);
+        setLoading(false);
+      } else {
+        console.log('🔄 [RESUME_ANALYSIS] Resume not in context, fetching from API');
+        fetchResumeData();
+      }
     }
-  }, [resumeId]);
+  }, []); // Only run once on mount
 
   // Background polling for processing status
   useEffect(() => {
@@ -267,7 +279,7 @@ const ResumeAnalysisPage = () => {
     } else if (resume?.status) {
       console.log(`ℹ️ [POLLING_SETUP] No polling needed for resume: ${resumeId} (status: ${resume.status})`);
     }
-  }, [resume?.status, resumeId]);
+  }, [resume?.status]); // Only depend on status, not resumeId
 
   if (loading) {
     return (

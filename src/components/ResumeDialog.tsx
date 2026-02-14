@@ -182,10 +182,10 @@ const ResumeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (op
       console.log('🔄 [RESUME_DIALOG] Triggering resume list refetch after creation');
       await refetchResumes();
 
-      toast.success("Resume evaluation started successfully! Redirecting to analysis page...");
+      toast.success("Resume evaluation started successfully!");
       
-      console.log(`🔄 [RESUME_DIALOG] Redirecting to /resumes/${data.resumeId}/analysis`);
-      router.push(`/resumes/${data.resumeId}/analysis`);
+      // Close dialog and stay on /resumes page
+      console.log(`✅ [RESUME_DIALOG] Staying on /resumes page, analysis will show PROCESSING status`);
       onOpenChange?.(false);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "Error evaluating resume. Try again later.";

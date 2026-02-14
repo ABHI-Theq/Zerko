@@ -29,17 +29,13 @@ export default function Navbar() {
     { name: "Pricing", link: "/pricing" },
     { name: "AboutUs", link: "/about" },
   ];
-  const { data: session ,status} = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-
-
   return (
     <div className="fixed top-6 left-1/2 -translate-x-1/2 w-[75vw] rounded-full z-50">
-          
-
       <ResizableNavbar>
         {/* Desktop Navigation */}
         <NavBody>
@@ -49,16 +45,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             {session ? (
               <>
-                {/* <NavbarButton
-                  variant="gradient"
-                  onClick={() => router.push("/dashboard")}
-                  className="text-white"
-                >
-                  Dashboard
-                </NavbarButton>
-                 */}
-                 <Userbutton session={session as Session}/>
-                  
+                <Userbutton session={session as Session} />
               </>
             ) : (
               <>
@@ -119,7 +106,7 @@ export default function Navbar() {
                     />
                   )}
                   <NavbarButton
-                    onClick={async() => await signOutAuth()}
+                    onClick={async () => await signOutAuth()}
                     variant="primary"
                     className="w-full bg-red-500 text-white hover:bg-red-600"
                   >

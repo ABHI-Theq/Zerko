@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'
 import React from 'react'
 import { Spinner } from './ui/spinner';
 import { Button } from './ui/button';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, Download, MoreVertical, Trash } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, Download, MoreVertical, Trash, Loader2 } from 'lucide-react';
 import {
     Popover,
     PopoverTrigger,
@@ -109,24 +109,24 @@ const ResumesAnalysisComponent = () => {
     return (
         <div className='w-full px-2'>
             {resumesAnalysis && resumesAnalysis.length > 0 ? (
-                <div className="flex items-center justify-start gap-6 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full">
                     {resumesAnalysis.map((resume, index) => (
                         <div 
                             key={resume.id || index}
-                            className="group relative bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300 overflow-hidden max-w-[40%]"
+                            className="group relative bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300 overflow-hidden"
                         >
                             {/* Delete Button */}
                             <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <button className="p-1.5 rounded-md hover:bg-gray-100 transition">
+                                        <button className="p-1.5 rounded-md hover:bg-gray-100 transition cursor-pointer">
                                             <MoreVertical className="w-5 h-5 text-gray-600" />
                                         </button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-32 p-2" align="end">
                                         <button
                                             onClick={() => handleDelete(resume.id)}
-                                            className="flex items-center gap-2 w-full px-2 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
+                                            className="flex items-center gap-2 w-full px-2 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
                                         >
                                             <Trash className="w-4 h-4" />
                                             Delete
@@ -139,14 +139,14 @@ const ResumesAnalysisComponent = () => {
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                             {/* Header */}
-                            <div className="p-6 pb-4">
+                            <div className="p-4 md:p-6 pb-4">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-gray-100 rounded-lg">
-                                            <FileText className="w-6 h-6 text-gray-600" />
+                                            <FileText className="w-5 h-5 md:w-6 md:h-6 text-gray-600" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900 text-lg">
+                                            <h3 className="font-semibold text-gray-900 text-base md:text-lg line-clamp-1">
                                                 {resume.title || `Resume Analysis #${index + 1}`}
                                             </h3>
                                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(resume.status)}`}>
@@ -162,7 +162,7 @@ const ResumesAnalysisComponent = () => {
                                     <div className="mb-4">
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-gray-600">Overall Score</span>
-                                            <span className={`text-2xl font-bold ${getScoreColor(resume.totalScore)}`}>
+                                            <span className={`text-xl md:text-2xl font-bold ${getScoreColor(resume.totalScore)}`}>
                                                 {resume.totalScore}/100
                                             </span>
                                         </div>
@@ -181,7 +181,7 @@ const ResumesAnalysisComponent = () => {
                                 {/* Job Description Preview */}
                                 <div className="mb-4">
                                     <h4 className="text-sm font-medium text-gray-600 mb-2">Job Description</h4>
-                                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg line-clamp-3">
                                         {truncateText(resume.jobDescription, 120)}
                                     </p>
                                 </div>
@@ -190,7 +190,7 @@ const ResumesAnalysisComponent = () => {
                                 {resume.status === 'COMPLETED' && resume.analysisResult && (
                                     <div className="mb-4">
                                         <h4 className="text-sm font-medium text-gray-600 mb-2">Analysis Summary</h4>
-                                        <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
+                                        <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg line-clamp-2">
                                             {(() => {
                                                 if (resume.analysisResult && typeof resume.analysisResult === 'object' && 'summary' in resume.analysisResult) {
                                                     return truncateText((resume.analysisResult as any).summary, 100);
@@ -204,12 +204,13 @@ const ResumesAnalysisComponent = () => {
                             </div>
 
                             {/* Actions */}
-                            <div className="px-6 pb-6 pt-2 border-t border-gray-100">
-                                <div className="flex gap-2">
+                            <div className="px-4 md:px-6 pb-4 md:pb-6 pt-2 border-t border-gray-100">
+                                <div className="flex flex-col sm:flex-row gap-2">
                                     <Button
                                         onClick={() => router.push(`/resumes/${resume.id}`)}
                                         variant="outline"
                                         className="flex-1 h-9 text-sm"
+                                        disabled={resume.status === 'PROCESSING'}
                                     >
                                         <FileText className="w-4 h-4 mr-2" />
                                         View Details
@@ -217,15 +218,25 @@ const ResumesAnalysisComponent = () => {
                                     <Button
                                         onClick={() => router.push(`/resumes/${resume.id}/analysis`)}
                                         className="flex-1 bg-gray-900 hover:bg-gray-800 text-white h-9 text-sm"
+                                        disabled={resume.status === 'PROCESSING'}
                                     >
-                                        <Eye className="w-4 h-4 mr-2" />
-                                        {resume.status === 'COMPLETED' ? 'View Analysis' : 'View Status'}
+                                        {resume.status === 'PROCESSING' ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Eye className="w-4 h-4 mr-2" />
+                                                {resume.status === 'COMPLETED' ? 'View Analysis' : 'View Status'}
+                                            </>
+                                        )}
                                     </Button>
                                     {resume.cloudinaryUrl && (
                                         <Button
                                             onClick={() => window.open(resume.cloudinaryUrl, '_blank')}
                                             variant="outline"
-                                            className="h-9 px-3"
+                                            className="h-9 px-3 sm:flex-none"
                                         >
                                             <Download className="w-4 h-4" />
                                         </Button>

@@ -19,11 +19,13 @@ import {
   AlertCircle
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useResumeConAll } from "@/context/ResumeAllContext";
 
 const ResumeDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
   const resumeId = params.resumeId as string;
+  const { resumesAnalysis } = useResumeConAll();
   
   const [resume, setResume] = useState<ResumeContextDets | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,11 +56,22 @@ const ResumeDetailsPage = () => {
     }
   };
 
+  // Try to get resume from context first, then fetch if not found
   useEffect(() => {
     if (resumeId) {
-      fetchResumeData();
+      // Check if resume exists in context
+      const contextResume = resumesAnalysis.find(r => r.id === resumeId);
+      
+      if (contextResume) {
+        console.log('✅ [RESUME_DETAILS] Using resume from context (instant load)');
+        setResume(contextResume);
+        setLoading(false);
+      } else {
+        console.log('🔄 [RESUME_DETAILS] Resume not in context, fetching from API');
+        fetchResumeData();
+      }
     }
-  }, [resumeId]);
+  }, [resumeId, resumesAnalysis]);
 
   // Background polling function (no loading state change)
   const pollResumeStatus = async () => {
@@ -79,12 +92,12 @@ const ResumeDetailsPage = () => {
   useEffect(() => {
     if (resume?.status === "PROCESSING") {
       const interval = setInterval(() => {
-        pollResumeStatus(); // Use background polling instead
+        pollResumeStatus();
       }, 3000);
 
       return () => clearInterval(interval);
     }
-  }, [resume?.status, resumeId]);
+  }, [resume?.status]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
