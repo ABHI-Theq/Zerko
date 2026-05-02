@@ -27,6 +27,9 @@ const ParsingResume: React.FC<ParsingResumeProps> = ({ open, onClose, resumeUrl,
       });
 
       const data = await res.json();
+      if (res.status === 429) {
+        throw new Error("AI service quota exceeded. The free tier limit has been reached. Please try again later.");
+      }
       if (!res.ok || data.error) throw new Error(data.error || "Error parsing resume");
         console.log(data);
         

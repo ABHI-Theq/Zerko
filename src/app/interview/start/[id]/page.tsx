@@ -436,16 +436,16 @@ export default function Page() {
           
           // User-friendly error messages based on status code
           let errorMessage = 'Failed to initialize interview. ';
-          if (res.status === 500) {
+          if (res.status === 429) {
+            errorMessage = '⚠️ AI service quota exceeded. The free tier limit has been reached. Please try again later or contact support.';
+          } else if (res.status === 500) {
             errorMessage += 'The interview service is experiencing issues.';
           } else if (res.status === 503) {
             errorMessage += 'The interview service is temporarily unavailable.';
-          } else if (res.status === 429) {
-            errorMessage += 'Too many requests. Please wait a moment.';
           } else {
             errorMessage += `Server returned error ${res.status}.`;
           }
-          errorMessage += ' Please refresh the page to try again.';
+          if (res.status !== 429) errorMessage += ' Please refresh the page to try again.';
           
           throw new Error(errorMessage);
         }
@@ -1007,15 +1007,16 @@ export default function Page() {
         let userMessage = 'Failed to get AI response. ';
         let canRetry = true;
         
-        if (res.status === 500) {
+        if (res.status === 429) {
+          userMessage = '⚠️ AI service quota exceeded. The free tier limit has been reached. Please try again later or contact support.';
+          canRetry = false;
+        } else if (res.status === 500) {
           userMessage += 'The interview service is experiencing issues.';
         } else if (res.status === 503) {
           userMessage += 'The interview service is temporarily unavailable.';
-        } else if (res.status === 429) {
-          userMessage += 'Too many requests. Please wait a moment before retrying.';
         } else if (res.status >= 400 && res.status < 500) {
           userMessage += 'Invalid request. Please contact support.';
-          canRetry = false; // Don't allow retry for client errors
+          canRetry = false;
         } else {
           userMessage += 'An unexpected error occurred.';
         }

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { QuestionsListSchema, QuestionsList } from "@/types";
 import { useInterviewCon } from "@/context/InterviewContext";
 import { useInterviewConAll } from "@/context/InterviewAllContext";
+import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding";
 
 interface QuestionGenerationProps {
   open: boolean;
@@ -35,6 +36,11 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
   const generateAndSaveQuestions = async () => {
     setLoading(true);
     try {
+      // Guard: resumeData must be available before generating questions
+      if (!interview.resumeData) {
+        throw new Error("Resume data is not available. Please try again.");
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/api/generate/questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,6 +54,10 @@ const QuestionGeneration: React.FC<QuestionGenerationProps> = ({
       });
 
       const data = await res.json();
+      // console.log("stautr: "+res.status);
+      if (res.status === 429) {
+        throw new Error("AI service quota exceeded. Please try again later or contact support.");
+      }
       if (!res.ok || !data.success) throw new Error("Failed to generate questions");
 
       let questionsList = data.data.questions;

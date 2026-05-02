@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException,BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import List, Dict, Literal, Annotated, Optional
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,12 +8,36 @@ import os
 import logging
 import time
 from dotenv import load_dotenv
+
 load_dotenv()
-from Question_generator_agent import get_questions, parse_Resume
+
+# Import quota error — also try to import google's ResourceExhausted directly
+from Question_generator_agent import get_questions, parse_Resume, QuotaExceededError
 from AI_interview_agent import interview_agent_auto_number as interview_agent_fn
 from FeedBackReportAgent import feedbackReport_agent
 from service import process_resume_analysis
 from contextlib import asynccontextmanager
+
+try:
+    from google.api_core.exceptions import ResourceExhausted as GoogleResourceExhausted
+except ImportError:
+    GoogleResourceExhausted = None
+
+
+def is_quota_error(e: Exception) -> bool:
+    """Reliably detect Gemini quota/rate-limit errors regardless of wrapping."""
+    if isinstance(e, QuotaExceededError):
+        return True
+    if GoogleResourceExhausted and isinstance(e, GoogleResourceExhausted):
+        return True
+    err_str = str(e)
+    type_name = type(e).__name__
+    return (
+        "ResourceExhausted" in type_name
+        or "429" in err_str
+        or "quota exceeded" in err_str.lower()
+        or "rate limit" in err_str.lower()
+    )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,10 +145,13 @@ def healthcheck():
 @app.post("/api/parse")
 def get_resume_data(req: ParseResume):
     try:
-        logging.info("Parsing resume: %s", req.resumeUrl)
-        data = parse_Resume(req.resumeUrl)
+        logger.info("[PARSE] resumeUrl=%s", req.resumeUrl)
+        data = parse_Re sume(req.resumeUrl)
         return {"success": True, "resumeData": data}
     except Exception as e:
+        if is_quota_error(e):
+            logger.warning("[PARSE] Gemini API quota exceeded")
+            raise HTTPException(status_code=429, detail="AI service quota exceeded. Please try again later.")
         logging.exception("Error parsing resume")
         raise HTTPException(status_code=500, detail=f"Error parsing resume: {e}")
 
@@ -134,16 +161,24 @@ def get_resume_data(req: ParseResume):
 @app.post("/api/generate/questions")
 def generate_questions(req: GenerateQuestionsRequest):
     try:
-        logging.info(f"Generating questions for post: {req.post}")
+        logger.info(
+            "[GENERATE_QUESTIONS] post=%s | type=%s | duration=%s | job_desc_len=%d | resume_data_len=%d",
+            req.post, req.interview_type, req.duration,
+            len(req.job_description) if req.job_description else 0,
+            len(req.resumeData) if req.resumeData else 0,
+        )
         output = get_questions(
             post=req.post,
             job_description=req.job_description,
             resume_data=req.resumeData,
             interviewType=req.interview_type,
-            duration=req.duration
+            duration=req.duration,
         )
         return {"success": True, "data": output}
     except Exception as e:
+        if is_quota_error(e):
+            logger.warning("[GENERATE_QUESTIONS] Gemini API quota exceeded")
+            raise HTTPException(status_code=429, detail="AI service quota exceeded. Please try again later.")
         logging.exception("Error generating questions")
         raise HTTPException(status_code=500, detail=f"Error generating questions: {e}")
 
@@ -153,7 +188,11 @@ def generate_questions(req: GenerateQuestionsRequest):
 @app.post("/api/interview/next")
 def get_next_interview_question(req: InterviewRequest):
     try:
-        logging.info("Interview request received for post: %s", req.post)
+        logger.info(
+            "[INTERVIEW_NEXT] post=%s | type=%s | messages=%d | questions=%d | time_left=%s | resume_data_len=%d",
+            req.post, req.interview_type, len(req.messages), len(req.questions),
+            req.time_left, len(req.resumeData) if req.resumeData else 0,
+        )
         result = interview_agent_fn(
             Post=req.post,
             JobDescription=req.job_description,
@@ -161,10 +200,13 @@ def get_next_interview_question(req: InterviewRequest):
             questions_list=req.questions,
             messages=req.messages,
             time_left=req.time_left,
-            force_next=req.force_next
+            force_next=req.force_next,
         )
         return {"success": True, "data": result}
     except Exception as e:
+        if is_quota_error(e):
+            logger.warning("[INTERVIEW_NEXT] Gemini API quota exceeded")
+            raise HTTPException(status_code=429, detail="AI service quota exceeded. Please try again later.")
         logging.exception("Error during interview")
         raise HTTPException(status_code=500, detail=f"Error during interview: {e}")
 
@@ -179,10 +221,12 @@ async def generate_interview_feedback(interview_id: str, req: FeedBackReportRequ
       - meta (metadata)
     """
     try:
-        # Log feedback generation request with interview ID (Requirement 9.5)
-        logger.info("Feedback generation request received: interview_id=%s, post='%s', type=%s, transcript_length=%d", 
-                    interview_id, req.post, req.interview_type, len(req.transcript))
-
+        logger.info(
+            "[FEEDBACK] interview_id=%s | post=%s | type=%s | transcript_len=%d | questions_len=%d | resume_data_len=%d",
+            interview_id, req.post, req.interview_type,
+            len(req.transcript), len(req.question_list),
+            len(req.resume_data) if req.resume_data else 0,
+        )
         feedback_result = feedbackReport_agent(
             post=req.post,
             jobDescription=req.jobDescription,
@@ -192,6 +236,9 @@ async def generate_interview_feedback(interview_id: str, req: FeedBackReportRequ
             interview_type=req.interview_type,
         )
     except Exception as e:
+        if is_quota_error(e):
+            logger.warning("[FEEDBACK] Gemini API quota exceeded for interview %s", interview_id)
+            raise HTTPException(status_code=429, detail="AI service quota exceeded. Please try again later.")
         logger.exception("Unhandled error while generating feedback for interview %s", interview_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 

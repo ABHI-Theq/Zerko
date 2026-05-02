@@ -2,6 +2,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 import logging
+import os
+from Question_generator_agent import QuotaExceededError
 load_dotenv()
 
 # Configure logging for Interview Agent (Requirement 9.4)
@@ -22,7 +24,7 @@ def interview_agent_auto_number(
     logger.info("Interview Agent request received: post='%s', messages_count=%d, time_left=%s, force_next=%s, lastQuestionAnswered=%s",
                 Post, len(messages), time_left, force_next, lastQuestionAnswered)
     
-    llm = ChatGoogleGenerativeAI(model="gemini-3-pro", temperature=0.6)
+    llm = ChatGoogleGenerativeAI(model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"), temperature=0.6)
     LAST_QUESTION_THRESHOLD = 2 * 60 * 1000
     END_INTERVIEW_THRESHOLD = 30 * 1000
 
@@ -202,7 +204,18 @@ Next line (what interviewer should say):
         )
         
         logger.info("Invoking LLM for next question generation")
-        response = llm.invoke(formatted_prompt)
+        try:
+            response = llm.invoke(formatted_prompt)
+        except Exception as e:
+            err_str = str(e)
+            if (
+                "ResourceExhausted" in type(e).__name__
+                or "429" in err_str
+                or "quota" in err_str.lower()
+                or "rate" in err_str.lower()
+            ):
+                raise QuotaExceededError(err_str)
+            raise
         raw_text = response.content.strip()
         logger.info("LLM response received, processing output")
         

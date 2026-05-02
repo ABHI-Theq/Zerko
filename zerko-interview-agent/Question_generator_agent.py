@@ -16,6 +16,11 @@ if not os.getenv("GOOGLE_API_KEY"):
     raise EnvironmentError("Missing GOOGLE_API_KEY in environment variables.")
 
 
+class QuotaExceededError(Exception):
+    """Raised when the Gemini API quota/rate limit is exceeded."""
+    pass
+
+
 # ---- Pydantic Model for structured output ----
 class Question(BaseModel):
     id: int = Field(..., description="Sequential ID starting from 1 for each question.")
@@ -92,11 +97,21 @@ Analyze both the **Job Description** and the **Candidate's Resume** carefully.
     )
 
     # ---- LLM ----
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.7)
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.7)
 
     try:
         response = llm.invoke(final_prompt)
     except Exception as e:
+        err_str = str(e)
+        # Catch quota/rate limit errors by type name or message content
+        if (
+            "ResourceExhausted" in type(e).__name__
+            or "429" in err_str
+            or "quota" in err_str.lower()
+            or "rate" in err_str.lower()
+        ):
+            raise QuotaExceededError(err_str)
         raise RuntimeError(f"LLM invocation failed: {e}")
 
     # ---- Extract text ----
@@ -110,13 +125,23 @@ Analyze both the **Job Description** and the **Candidate's Resume** carefully.
     else:
         text_output = str(response)
 
-    # ---- Parse with Pydantic Parser ----
+    # ---- Parse with Pydantic Parser, fallback to raw JSON extraction ----
     try:
         parsed_output = output_parser.parse(text_output)
         return parsed_output.dict()
-    except Exception as e:
+    except Exception as primary_err:
+        # Fallback: extract JSON block from the raw output
+        import re, json
+        json_match = re.search(r'\{.*\}', text_output, re.DOTALL)
+        if json_match:
+            try:
+                raw_json = json.loads(json_match.group())
+                parsed_output = InterviewOutput(**raw_json)
+                return parsed_output.dict()
+            except Exception:
+                pass
         raise RuntimeError(
-            f"Could not parse structured output from LLM.\n\nRaw output:\n{text_output}\n\nParse error: {e}"
+            f"Could not parse structured output from LLM.\n\nRaw output:\n{text_output}\n\nParse error: {primary_err}"
         )
 
 

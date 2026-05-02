@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +47,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
   const [currentInterviewId, setCurrentInterviewId] = useState("");
   const [progressStep, setProgressStep] = useState<"upload" | "parse" | "generate" | "done" | null>(null);
   const { setInterview } = { ...useInterviewCon() };
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Generate default name based on current date
   const generateDefaultName = () => {
@@ -61,10 +62,31 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
     return `Interview - ${dateStr}`;
   };
 
-  // Initialize with default name when dialog opens
+  // Reset all form state to initial values
+  const resetForm = () => {
+    setStep(1);
+    setName(generateDefaultName());
+    setNameError("");
+    setNameExists(false);
+    setCheckingName(false);
+    setPost(null);
+    setJobDescription(null);
+    setResume(null);
+    setResumeError("");
+    setDuration("");
+    setInterviewType("");
+    setResumeUrl("");
+    setCurrentInterviewId("");
+    setProgressStep(null);
+    setLoading(false);
+    // Clear the file input visually
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Reset form only when dialog opens (not on close, to avoid wiping mid-flow state)
   useEffect(() => {
-    if (open && !name) {
-      setName(generateDefaultName());
+    if (open) {
+      resetForm();
     }
   }, [open]);
 
@@ -276,6 +298,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
                 <Textarea
                   className="bg-neutral-100 text-black overflow-auto max-h-64 h-32"
                   placeholder="Enter the Job Description over here"
+                  value={jobDescription ?? ""}
                   onChange={(e) => setJobDescription(e.target.value)}
                 />
               </div>
@@ -283,6 +306,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
               <div>
                 <Label htmlFor="resume">Resume</Label>
                 <Input
+                  ref={fileInputRef}
                   id="resume"
                   type="file"
                   accept=".pdf,.doc,.docx"
@@ -392,8 +416,7 @@ const InterviewDialog = ({ open, onOpenChange }: InterviewDialogProps) => {
         <QuestionGeneration
           open={true}
           onClose={() => {
-            setProgressStep("done");
-            setStep(1);
+            resetForm();
           }}
           interviewId={currentInterviewId}
           interviewPost={post ?? ""}
