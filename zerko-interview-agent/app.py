@@ -146,7 +146,7 @@ def healthcheck():
 def get_resume_data(req: ParseResume):
     try:
         logger.info("[PARSE] resumeUrl=%s", req.resumeUrl)
-        data = parse_Re sume(req.resumeUrl)
+        data = parse_Resume(req.resumeUrl)
         return {"success": True, "resumeData": data}
     except Exception as e:
         if is_quota_error(e):
